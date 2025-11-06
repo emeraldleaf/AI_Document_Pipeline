@@ -1,0 +1,107 @@
+/**
+ * ============================================================================
+ * GLOBAL STYLES - Document Search UI
+ * ============================================================================
+ *
+ * PURPOSE:
+ *   Global CSS with Tailwind directives and custom styles.
+ *
+ * TAILWIND CSS:
+ *   Utility-first CSS framework. Instead of writing custom CSS classes,
+ *   you use pre-built utility classes like "p-4", "text-blue-600", etc.
+ *
+ *   BENEFITS:
+ *     - Fast development (no naming classes)
+ *     - Consistent design (pre-defined spacing, colors)
+ *     - Small bundle size (only includes used classes)
+ *     - Responsive design (built-in breakpoints)
+ *
+ * AUTHOR: AI Document Pipeline Team
+ * LAST UPDATED: October 2025
+ */
+
+/* Tailwind base styles (resets, normalize) */
+@tailwind base;
+
+/* Tailwind component classes */
+@tailwind components;
+
+/* Tailwind utility classes */
+@tailwind utilities;
+
+/**
+ * Custom base styles
+ *
+ * Applied globally to all elements
+ */
+@layer base {
+  /* Smooth scrolling for all scroll containers */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Default body styles */
+  body {
+    @apply antialiased;
+    @apply text-gray-900;
+    @apply bg-gray-50;
+  }
+
+  /* Better font rendering */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/**
+ * Custom component styles
+ *
+ * Reusable component classes (if needed)
+ */
+@layer components {
+  /* Custom scrollbar for better aesthetics */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+}
+
+/**
+ * Custom utility classes
+ *
+ * Additional utilities not in Tailwind
+ */
+@layer utilities {
+  /* Text selection color */
+  ::selection {
+    @apply bg-blue-200 text-blue-900;
+  }
+
+  /* Focus ring for accessibility */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  }
+}
+
+/**
+ * Highlight styles for search results
+ *
+ * Used when highlighting matching text in search results
+ */
+mark {
+  @apply bg-yellow-200 text-yellow-900 px-1 rounded;
+  font-weight: 600;
+}

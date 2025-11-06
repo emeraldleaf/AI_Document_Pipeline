@@ -1,0 +1,58 @@
+# Core dependencies
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Document processing
+PyPDF2==3.0.1
+pypdf==6.1.3
+pdfplumber==0.10.3
+python-docx==1.1.0
+openpyxl==3.1.2
+pandas==2.1.4
+python-magic==0.4.27
+
+# Image processing and OCR
+Pillow>=10.3.0
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+
+# Ollama integration
+ollama>=0.3.0  # Updated for httpx 0.26+ compatibility
+requests>=2.32.4
+
+# CLI
+click==8.1.7
+rich==13.7.0
+colorama==0.4.6
+
+# Utilities
+pathlib2==2.3.7.post1
+tqdm>=4.66.3
+loguru==0.7.2
+
+# Database (Required for search)
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9  # PostgreSQL driver
+
+# Search & Embeddings (Optional - for semantic search)
+# If using Ollama embeddings only, these are optional
+# openai==1.12.0  # Uncomment for OpenAI embeddings in production
+
+# High-performance processing (Optional - for distributed processing)
+celery==5.3.4  # Distributed task queue
+redis==5.0.1  # Message broker for Celery
+flower==2.0.1  # Celery monitoring dashboard
+
+# System monitoring (for performance benchmarks)
+psutil>=5.9.0  # System resource monitoring
+
+# Web API (FastAPI backend)
+fastapi==0.109.0  # Modern async web framework
+uvicorn[standard]==0.27.0  # ASGI server
+slowapi==0.1.9  # Rate limiting for FastAPI
+
+# Development and testing dependencies
+pytest>=8.0.0
+pytest-asyncio>=1.2.0
+httpx>=0.26.0  # For testing FastAPI endpoints

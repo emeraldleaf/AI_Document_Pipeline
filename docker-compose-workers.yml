@@ -1,0 +1,203 @@
+version: '3.8'
+
+services:
+  # Redis message broker for Celery
+  redis:
+    image: redis:7-alpine
+    container_name: doc_pipeline_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # PostgreSQL database with pgvector
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: doc_pipeline_postgres
+    environment:
+      POSTGRES_DB: documents
+      POSTGRES_USER: docuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuser -d documents"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Ollama LLM service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: doc_pipeline_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+    command: serve
+
+  # Celery worker 1 (primary)
+  worker1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_worker1
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://docuser:${DB_PASSWORD:-devpassword}@postgres:5432/documents
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - USE_DATABASE=true
+      - STORE_FULL_CONTENT=true
+    depends_on:
+      - redis
+      - postgres
+      - ollama
+    volumes:
+      - ./documents:/app/documents
+      - ./logs:/app/logs
+    command: celery -A src.celery_tasks worker --loglevel=info --concurrency=8 --hostname=worker1@%h
+    restart: unless-stopped
+
+  # Celery worker 2
+  worker2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_worker2
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://docuser:${DB_PASSWORD:-devpassword}@postgres:5432/documents
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - USE_DATABASE=true
+      - STORE_FULL_CONTENT=true
+    depends_on:
+      - redis
+      - postgres
+      - ollama
+    volumes:
+      - ./documents:/app/documents
+      - ./logs:/app/logs
+    command: celery -A src.celery_tasks worker --loglevel=info --concurrency=8 --hostname=worker2@%h
+    restart: unless-stopped
+
+  # Celery worker 3
+  worker3:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_worker3
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://docuser:${DB_PASSWORD:-devpassword}@postgres:5432/documents
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - USE_DATABASE=true
+      - STORE_FULL_CONTENT=true
+    depends_on:
+      - redis
+      - postgres
+      - ollama
+    volumes:
+      - ./documents:/app/documents
+      - ./logs:/app/logs
+    command: celery -A src.celery_tasks worker --loglevel=info --concurrency=8 --hostname=worker3@%h
+    restart: unless-stopped
+
+  # Celery worker 4
+  worker4:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_worker4
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://docuser:${DB_PASSWORD:-devpassword}@postgres:5432/documents
+      - OLLAMA_HOST=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:3b}
+      - USE_DATABASE=true
+      - STORE_FULL_CONTENT=true
+    depends_on:
+      - redis
+      - postgres
+      - ollama
+    volumes:
+      - ./documents:/app/documents
+      - ./logs:/app/logs
+    command: celery -A src.celery_tasks worker --loglevel=info --concurrency=8 --hostname=worker4@%h
+    restart: unless-stopped
+
+  # Flower monitoring dashboard
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - worker1
+    ports:
+      - "5555:5555"
+    command: celery -A src.celery_tasks flower --port=5555
+    restart: unless-stopped
+
+  # Main application API (optional)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_api
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - DATABASE_URL=postgresql://docuser:${DB_PASSWORD:-devpassword}@postgres:5432/documents
+      - OLLAMA_HOST=http://ollama:11434
+      - USE_DATABASE=true
+    depends_on:
+      - redis
+      - postgres
+      - ollama
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./documents:/app/documents
+    command: python -m src.cli_modern
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  ollama_data:
+    driver: local
+
+networks:
+  default:
+    name: doc_pipeline_network
