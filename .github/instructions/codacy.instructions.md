@@ -1,9 +1,10 @@
 ---
-    description: Configuration for AI behavior when interacting with Codacy's MCP Server
-    applyTo: '**'
+description: Configuration for AI behavior when interacting with Codacy's MCP Server
+applyTo: '**'
 ---
----
+
 # Codacy Rules
+
 Configuration for AI behavior when interacting with Codacy's MCP Server
 
 ## using any tool that accepts the arguments: `provider`, `organization`, or `repository`
