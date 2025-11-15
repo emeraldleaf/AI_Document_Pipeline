@@ -1,0 +1,67 @@
+/* Custom styling for Word document preview */
+.docx-wrapper {
+  font-family: 'Calibri', 'Arial', sans-serif;
+}
+
+.docx-wrapper .docx {
+  background: white;
+  padding: 20px;
+}
+
+/* Ensure images render properly */
+.docx-wrapper img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Table styling */
+.docx-wrapper table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 10px 0;
+}
+
+.docx-wrapper table td,
+.docx-wrapper table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.docx-wrapper table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+}
+
+/* Basic docx-preview styles inline since package doesn't export CSS */
+.docx {
+  background: white;
+  color: black;
+}
+
+.docx section.docx {
+  margin-bottom: 10pt;
+  padding: 10pt;
+}
+
+.docx p {
+  margin: 0;
+  min-height: 1em;
+}
+
+.docx table {
+  border-collapse: collapse;
+}
+
+.docx table td,
+.docx table th {
+  vertical-align: top;
+}
+
+.docx .docx-num-decimal::after {
+  content: ".";
+}
+
+.docx a {
+  color: #0563c1;
+  text-decoration: underline;
+}

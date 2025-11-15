@@ -199,7 +199,7 @@ OCR content can be used for model training:
 python scripts/test_ocr.py
 
 # Run basic installation test
-python test_ocr_simple.py
+python scripts/test_ocr_simple.py
 
 # Test with example usage
 python examples/ocr_usage.py

@@ -531,6 +531,108 @@ class Settings(BaseSettings):
     """
 
     # ==========================================================================
+    # SEARCH BACKEND CONFIGURATION
+    # ==========================================================================
+
+    search_backend: str = "postgresql"
+    """
+    Search backend to use.
+
+    Default: postgresql (simple, works out of the box)
+
+    Options:
+        - postgresql: PostgreSQL with pgvector (good for <50K docs)
+        - opensearch: OpenSearch (excellent for 100K-millions of docs)
+
+    Comparison:
+        PostgreSQL:
+        + Simple setup (single database)
+        + Good for small-medium collections
+        + Full-text search + vector search
+        - Limited scalability (50K-100K docs)
+        - Basic search features
+
+        OpenSearch:
+        + Enterprise-scale (millions of docs)
+        + Advanced features (facets, aggregations, highlighting)
+        + Distributed and horizontally scalable
+        + Built for search workloads
+        - More complex setup
+        - Requires separate service
+
+    When to use OpenSearch:
+        ✓ 100K+ documents
+        ✓ High query volume
+        ✓ Need advanced search features
+        ✓ Want analytics dashboards
+        ✓ Planning to scale
+
+    Setup OpenSearch:
+        1. Start OpenSearch: docker-compose -f docker-compose-opensearch.yml up -d
+        2. Migrate data: python scripts/migrate_to_opensearch.py
+        3. Update config: SEARCH_BACKEND=opensearch
+        4. Test search: doc-classify search "query"
+    """
+
+    opensearch_hosts: str = "http://localhost:9200"
+    """
+    OpenSearch host URLs (comma-separated for multiple hosts).
+
+    Default: http://localhost:9200
+
+    Examples:
+        Single node:
+            http://localhost:9200
+
+        Multiple nodes (production):
+            http://node1:9200,http://node2:9200,http://node3:9200
+
+        Docker:
+            http://opensearch:9200
+
+        AWS OpenSearch:
+            https://search-mydomain-abc123.us-east-1.es.amazonaws.com
+
+    Security:
+        For production, use HTTPS and authentication:
+        - opensearch_use_ssl: true
+        - opensearch_verify_certs: true
+        - opensearch_username: username
+        - opensearch_password: password
+    """
+
+    opensearch_index: str = "documents"
+    """
+    OpenSearch index name.
+
+    Default: documents
+
+    Index names should be lowercase and can include:
+        - Lowercase letters
+        - Numbers
+        - Hyphens (-)
+        - Underscores (_)
+
+    Examples:
+        - documents
+        - company_docs
+        - invoices-2024
+        - project-docs-v2
+    """
+
+    opensearch_use_ssl: bool = False
+    """Use SSL/TLS for OpenSearch connection (enable in production)."""
+
+    opensearch_verify_certs: bool = False
+    """Verify SSL certificates (enable in production with valid certs)."""
+
+    opensearch_username: str = ""
+    """OpenSearch username (if authentication enabled)."""
+
+    opensearch_password: str = ""
+    """OpenSearch password (if authentication enabled)."""
+
+    # ==========================================================================
     # EMBEDDING CONFIGURATION (Semantic Search)
     # ==========================================================================
 
@@ -564,15 +666,15 @@ class Settings(BaseSettings):
         - Sends data to OpenAI
     """
 
-    embedding_model: str = "nomic-embed-text"
+    embedding_model: str = "mxbai-embed-large"
     """
     Model name for generating embeddings.
 
-    Default: nomic-embed-text (Ollama)
+    Default: mxbai-embed-large (Ollama, 1024 dims, better precision)
 
     Ollama models:
-        - nomic-embed-text: Best for documents (recommended)
-        - mxbai-embed-large: Alternative
+        - mxbai-embed-large: Best for high-precision semantic search (recommended, 1024 dims)
+        - nomic-embed-text: Alternative (768 dims)
 
     OpenAI models:
         - text-embedding-3-small: Good balance
@@ -580,14 +682,14 @@ class Settings(BaseSettings):
         - text-embedding-ada-002: Legacy
 
     Download (Ollama):
-        ollama pull nomic-embed-text
+        ollama pull mxbai-embed-large
     """
 
-    embedding_dimension: int = 768
+    embedding_dimension: int = 1024
     """
     Dimension of embedding vectors.
 
-    Default: 768 (nomic-embed-text)
+    Default: 1024 (mxbai-embed-large)
 
     Different models have different dimensions:
         - nomic-embed-text: 768
@@ -760,6 +862,25 @@ class Settings(BaseSettings):
             ["invoices", "contracts", "reports"]
         """
         return [cat.strip() for cat in self.categories.split(",")]
+
+    @property
+    def opensearch_hosts_list(self) -> List[str]:
+        """
+        Return OpenSearch hosts as a list.
+
+        Converts comma-separated string to list:
+            "http://node1:9200,http://node2:9200" → ["http://node1:9200", "http://node2:9200"]
+
+        Returns:
+            List of host URLs
+
+        Usage:
+            >>> settings.opensearch_hosts
+            "http://localhost:9200"
+            >>> settings.opensearch_hosts_list
+            ["http://localhost:9200"]
+        """
+        return [host.strip() for host in self.opensearch_hosts.split(",")]
 
     @property
     def max_file_size_bytes(self) -> int:

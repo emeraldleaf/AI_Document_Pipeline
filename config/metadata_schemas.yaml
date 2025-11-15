@@ -1,0 +1,835 @@
+# Metadata Schema Configurations
+# ================================
+# Define the metadata fields to extract for each document type
+# The LLM will use these schemas to intelligently extract structured data
+
+invoices:
+  description: "Invoices and receipts for business transactions"
+  required_fields:
+    - invoice_number
+    - total_amount
+
+  fields:
+    # Identification
+    invoice_number:
+      type: string
+      description: "Invoice or receipt number (alphanumeric identifier)"
+      examples: ["INV-2024-001", "REC-12345"]
+
+    # Dates
+    invoice_date:
+      type: date
+      description: "Date the invoice was issued (YYYY-MM-DD format)"
+      examples: ["2024-01-15"]
+
+    due_date:
+      type: date
+      description: "Payment due date (YYYY-MM-DD format)"
+      examples: ["2024-02-15"]
+
+    # Parties
+    vendor_name:
+      type: string
+      description: "Name of the vendor or merchant"
+      examples: ["Acme Corporation", "Tech Services LLC"]
+
+    vendor_address:
+      type: string
+      description: "Full address of the vendor"
+
+    vendor_phone:
+      type: string
+      description: "Vendor's phone number (look for Phone:, Tel:, or phone numbers in vendor section)"
+      examples: ["(415) 555-0100", "206-555-0200", "+1-800-123-4567"]
+
+    vendor_email:
+      type: string
+      description: "Vendor's email address (look for Email:, or email addresses in vendor section)"
+      examples: ["billing@company.com", "sales@vendor.com"]
+
+    customer_name:
+      type: string
+      description: "Name of the customer or client"
+
+    customer_address:
+      type: string
+      description: "Customer's billing address"
+
+    # Financial
+    currency:
+      type: string
+      description: "Currency code (ISO 4217)"
+      examples: ["USD", "EUR", "GBP"]
+      default: "USD"
+
+    subtotal:
+      type: number
+      description: "Subtotal amount before tax (look for 'Subtotal:', 'Sub-total:', or amount before tax line)"
+      examples: [1000.00, 250.50, 10750.00]
+
+    tax_amount:
+      type: number
+      description: "Total tax amount"
+      examples: [80.00, 20.04]
+
+    tax_rate:
+      type: number
+      description: "Tax rate as percentage"
+      examples: [8.0, 10.5]
+
+    total_amount:
+      type: number
+      description: "Total amount including all charges and tax"
+      examples: [1080.00, 270.54]
+
+    # Payment
+    payment_method:
+      type: string
+      description: "Method of payment"
+      examples: ["Credit Card", "Check", "Wire Transfer", "Cash"]
+
+    payment_terms:
+      type: string
+      description: "Payment terms"
+      examples: ["Net 30", "Due on receipt", "Net 15"]
+
+    payment_status:
+      type: string
+      description: "Current payment status"
+      examples: ["Paid", "Unpaid", "Partial", "Overdue"]
+
+    # Items
+    item_count:
+      type: integer
+      description: "Number of line items on the invoice"
+
+    description:
+      type: string
+      description: "Brief description of goods/services provided"
+
+contracts:
+  description: "Legal contracts and agreements"
+  required_fields:
+    - party_a
+    - party_b
+
+  fields:
+    # Identification
+    contract_number:
+      type: string
+      description: "Contract or agreement reference number"
+      examples: ["CONT-2024-001", "AGR-12345"]
+
+    contract_type:
+      type: string
+      description: "Type of contract"
+      examples: ["Service Agreement", "Employment Contract", "NDA", "Consulting Agreement", "Lease Agreement"]
+
+    title:
+      type: string
+      description: "Full title of the contract"
+
+    # Parties
+    party_a:
+      type: string
+      description: "First party (usually the company/organization)"
+      examples: ["Acme Corporation", "Tech Services LLC"]
+
+    party_b:
+      type: string
+      description: "Second party (client/contractor/employee)"
+      examples: ["John Smith", "Consulting Services Inc"]
+
+    additional_parties:
+      type: array
+      description: "Additional parties involved (if any)"
+
+    # Dates
+    execution_date:
+      type: date
+      description: "Date the contract was signed/executed"
+
+    effective_date:
+      type: date
+      description: "Date when contract becomes effective"
+
+    start_date:
+      type: date
+      description: "Contract start date"
+
+    end_date:
+      type: date
+      description: "Contract end date"
+
+    expiration_date:
+      type: date
+      description: "Contract expiration date"
+
+    # Financial
+    contract_value:
+      type: number
+      description: "Total value of the contract"
+      examples: [50000.00, 125000.00]
+
+    currency:
+      type: string
+      description: "Currency code"
+      default: "USD"
+
+    payment_schedule:
+      type: string
+      description: "Payment schedule details"
+      examples: ["Monthly", "Quarterly", "Upon completion"]
+
+    # Terms
+    duration_months:
+      type: integer
+      description: "Contract duration in months"
+
+    renewal_terms:
+      type: string
+      description: "Renewal or extension terms"
+
+    termination_clause:
+      type: boolean
+      description: "Whether contract has a termination clause"
+
+    notice_period_days:
+      type: integer
+      description: "Required notice period for termination (in days)"
+
+    # Status
+    status:
+      type: string
+      description: "Current status of the contract"
+      examples: ["Draft", "Active", "Expired", "Terminated"]
+
+    is_signed:
+      type: boolean
+      description: "Whether all parties have signed"
+
+    confidentiality_clause:
+      type: boolean
+      description: "Whether contract includes confidentiality/NDA clause"
+
+reports:
+  description: "Business reports and analyses"
+  required_fields:
+    - report_type
+
+  fields:
+    # Identification
+    report_type:
+      type: string
+      description: "Type of report"
+      examples: ["Financial Report", "Quarterly Report", "Annual Report", "Technical Report", "Sales Report"]
+
+    report_number:
+      type: string
+      description: "Report reference number"
+
+    title:
+      type: string
+      description: "Full title of the report"
+
+    # Temporal
+    report_date:
+      type: date
+      description: "Date the report was generated"
+
+    period_start:
+      type: date
+      description: "Start date of reporting period"
+
+    period_end:
+      type: date
+      description: "End date of reporting period"
+
+    fiscal_year:
+      type: integer
+      description: "Fiscal year"
+      examples: [2024, 2023]
+
+    fiscal_quarter:
+      type: string
+      description: "Fiscal quarter"
+      examples: ["Q1", "Q2", "Q3", "Q4"]
+
+    # Organization
+    department:
+      type: string
+      description: "Department that generated the report"
+      examples: ["Finance", "Sales", "Marketing", "Operations"]
+
+    division:
+      type: string
+      description: "Division or business unit"
+
+    prepared_by:
+      type: string
+      description: "Person or team who prepared the report"
+
+    reviewed_by:
+      type: string
+      description: "Person who reviewed/approved the report"
+
+    # Financial metrics (if applicable)
+    revenue:
+      type: number
+      description: "Total revenue for the period"
+
+    expenses:
+      type: number
+      description: "Total expenses for the period"
+
+    profit:
+      type: number
+      description: "Net profit/loss for the period"
+
+    growth_rate:
+      type: number
+      description: "Growth rate as percentage"
+
+    # Classification
+    confidentiality_level:
+      type: string
+      description: "Confidentiality classification"
+      examples: ["Public", "Internal", "Confidential", "Restricted"]
+
+    summary:
+      type: string
+      description: "Brief summary of the report's key findings"
+
+technical_manuals:
+  description: "Technical documentation and implementation guides"
+  required_fields:
+    - document_title
+
+  fields:
+    # Document Identification
+    document_title:
+      type: string
+      description: "Full title of the technical document"
+      examples: ["Technical Implementation Manual", "System Architecture Guide"]
+
+    document_type:
+      type: string
+      description: "Type of technical document"
+      examples: ["Technical Manual", "Implementation Guide", "API Documentation", "Deployment Guide"]
+
+    version:
+      type: string
+      description: "Document version number"
+      examples: ["1.0", "2.0", "v3.1.2"]
+
+    # Publication Information
+    publication_date:
+      type: string
+      description: "Date the document was published"
+      examples: ["November 2025", "2025-11-01"]
+
+    author_organization:
+      type: string
+      description: "Organization or team that authored the document"
+      examples: ["System Architecture Team", "DevOps Team", "Engineering Department"]
+
+    document_purpose:
+      type: string
+      description: "Purpose or scope of the document"
+      examples: ["System Architecture and Deployment Guide", "API Integration Manual"]
+
+    # Technical Specifications
+    system_requirements:
+      type: string
+      description: "Hardware/software requirements for the system"
+      examples: ["16GB RAM, 4 CPU cores, 100GB storage", "PostgreSQL 15+, Python 3.9+"]
+
+    database_version:
+      type: string
+      description: "Required database version"
+      examples: ["PostgreSQL 15+", "MySQL 8.0", "MongoDB 5.0"]
+
+    api_type:
+      type: string
+      description: "Type of API or interface"
+      examples: ["REST API", "GraphQL", "SOAP", "gRPC"]
+
+    authentication_method:
+      type: string
+      description: "Authentication mechanism used"
+      examples: ["OAuth2", "JWT", "Basic Auth", "API Keys"]
+
+    deployment_method:
+      type: string
+      description: "How the system is deployed"
+      examples: ["Docker Compose", "Kubernetes", "AWS ECS", "Azure App Service"]
+
+    # Operations & Monitoring
+    monitoring_tools:
+      type: string
+      description: "Tools used for monitoring and observability"
+      examples: ["Prometheus, Grafana", "DataDog", "New Relic", "CloudWatch"]
+
+    security_standard:
+      type: string
+      description: "Security standards or protocols implemented"
+      examples: ["TLS 1.3", "OAuth 2.0", "HIPAA Compliant", "SOC 2"]
+
+    backup_frequency:
+      type: string
+      description: "How often backups are performed"
+      examples: ["Daily", "Hourly", "Real-time", "Weekly"]
+
+    # Quality Assurance
+    testing_coverage:
+      type: string
+      description: "Code or testing coverage percentage"
+      examples: ["85%", "90%", "95%", "100%"]
+
+    maintenance_schedule:
+      type: string
+      description: "Regular maintenance activities"
+      examples: ["Weekly security updates", "Monthly patches", "Quarterly reviews"]
+
+    support_level:
+      type: string
+      description: "Level of support provided"
+      examples: ["Enterprise support contracts", "Community support", "24/7 support"]
+
+correspondence:
+  description: "Emails, meeting notes, and business correspondence"
+  required_fields:
+    - subject
+    - sender_name
+
+  fields:
+    # Identification
+    subject:
+      type: string
+      description: "Email subject line or document title"
+      examples: ["Meeting Notes - Product Strategy Session", "Re: Q4 Budget Review"]
+
+    message_id:
+      type: string
+      description: "Unique message identifier or document reference number"
+
+    # Parties
+    sender_name:
+      type: string
+      description: "Name of the sender or document author"
+      examples: ["Sarah Williams", "John Smith"]
+
+    sender_email:
+      type: string
+      description: "Email address of sender"
+      examples: ["sarah.williams@company.com", "john.smith@vendor.com"]
+
+    sender_title:
+      type: string
+      description: "Sender's job title or role"
+      examples: ["Product Manager", "VP of Sales", "CEO"]
+
+    recipient_names:
+      type: array
+      description: "List of primary recipient names"
+      examples: [["Michael Chen", "David Park"], ["Emma Rodriguez"]]
+
+    recipient_emails:
+      type: array
+      description: "List of primary recipient email addresses"
+      examples: [["michael.chen@company.com"], ["emma.rodriguez@client.com"]]
+
+    cc_recipients:
+      type: array
+      description: "List of CC recipient names"
+
+    bcc_recipients:
+      type: array
+      description: "List of BCC recipient names"
+
+    # Temporal
+    sent_date:
+      type: datetime
+      description: "Date and time sent (YYYY-MM-DD or descriptive format)"
+      examples: ["2024-10-28", "October 28, 2024", "2024-10-28T10:00:00"]
+
+    received_date:
+      type: datetime
+      description: "Date and time received"
+
+    # Content Classification
+    message_type:
+      type: string
+      description: "Type of correspondence"
+      examples: ["Email", "Meeting Notes", "Memo", "Letter", "Report", "Announcement"]
+
+    correspondence_category:
+      type: string
+      description: "Business category of the correspondence"
+      examples: ["Internal Communication", "Client Meeting", "Vendor Discussion", "Project Update", "HR Matter"]
+
+    # Attachments
+    has_attachments:
+      type: boolean
+      description: "Whether message has attachments"
+      default: false
+
+    attachment_count:
+      type: integer
+      description: "Number of attachments"
+      default: 0
+
+    attachment_names:
+      type: array
+      description: "Names of attached files"
+      examples: [["agenda.pdf"], ["presentation.pptx", "budget.xlsx"]]
+
+    # Priority and Urgency
+    priority:
+      type: string
+      description: "Message priority level"
+      examples: ["Low", "Normal", "High", "Urgent"]
+      default: "Normal"
+
+    urgency_level:
+      type: string
+      description: "Urgency classification"
+      examples: ["Routine", "Important", "Critical", "Time-sensitive"]
+
+    # Meeting Related Fields
+    is_meeting_related:
+      type: boolean
+      description: "Whether this relates to a meeting or discussion"
+      default: false
+
+    meeting_date:
+      type: datetime
+      description: "Date/time of associated meeting"
+      examples: ["2024-11-15T10:00:00", "October 28, 2024"]
+
+    meeting_location:
+      type: string
+      description: "Meeting location (physical or virtual)"
+      examples: ["Conference Room A", "Zoom", "Microsoft Teams", "Phone Call"]
+
+    meeting_duration:
+      type: string
+      description: "Meeting duration"
+      examples: ["1 hour", "30 minutes", "2 hours"]
+
+    attendees:
+      type: array
+      description: "List of meeting attendees"
+      examples: [["Sarah Williams", "Michael Chen", "David Park"]]
+
+    # Action Items and Tasks
+    has_action_items:
+      type: boolean
+      description: "Whether the message contains action items or to-dos"
+      default: false
+
+    action_items:
+      type: array
+      description: "List of action items or tasks mentioned"
+      examples: [["Sarah to prepare presentation"], ["Michael to review budget"]]
+
+    deadlines:
+      type: array
+      description: "Associated deadlines or due dates"
+      examples: [["2024-11-01"], ["End of Q4"]]
+
+    responsible_parties:
+      type: array
+      description: "People responsible for action items"
+      examples: [["Sarah Williams"], ["Michael Chen", "David Park"]]
+
+    # Content Summary
+    summary:
+      type: string
+      description: "Brief summary of the correspondence content"
+      examples: ["Q4 Product Roadmap Review, Enterprise Feature Prioritization"]
+
+    key_points:
+      type: array
+      description: "Main points or topics discussed"
+      examples: [["Product roadmap"], ["Resource allocation"], ["Go-to-market strategy"]]
+
+    decisions_made:
+      type: array
+      description: "Decisions or conclusions reached"
+      examples: [["Approved Q4 budget"], ["Prioritized enterprise features"]]
+
+    next_steps:
+      type: string
+      description: "Next steps or follow-up actions"
+
+    # Business Context
+    project_name:
+      type: string
+      description: "Associated project or initiative name"
+      examples: ["Q4 Product Launch", "Enterprise Migration"]
+
+    department:
+      type: string
+      description: "Relevant department or business unit"
+      examples: ["Product", "Sales", "Engineering", "Finance"]
+
+    confidentiality_level:
+      type: string
+      description: "Confidentiality classification"
+      examples: ["Public", "Internal", "Confidential", "Restricted"]
+
+    # Response Tracking
+    requires_response:
+      type: boolean
+      description: "Whether this message requires a response"
+      default: false
+
+    response_deadline:
+      type: datetime
+      description: "Deadline for response if required"
+
+    follow_up_date:
+      type: datetime
+      description: "Suggested or scheduled follow-up date"
+
+purchase_orders:
+  description: "Purchase orders for goods and services procurement"
+  required_fields:
+    - po_number
+    - vendor_name
+    - total_amount
+
+  fields:
+    # Identification
+    po_number:
+      type: string
+      description: "Purchase order number or reference"
+      examples: ["PO-2024-001", "ORD-12345", "PUR-001-2024"]
+
+    po_date:
+      type: date
+      description: "Date the purchase order was issued (YYYY-MM-DD format)"
+      examples: ["2024-01-15", "2024-10-28"]
+
+    po_status:
+      type: string
+      description: "Current status of the purchase order"
+      examples: ["Draft", "Approved", "Sent", "Received", "Cancelled", "Closed"]
+      default: "Approved"
+
+    # Parties
+    vendor_name:
+      type: string
+      description: "Name of the vendor or supplier"
+      examples: ["Tech Solutions Inc", "Office Supplies Plus", "Manufacturing Corp"]
+
+    vendor_address:
+      type: string
+      description: "Complete vendor address"
+
+    vendor_contact:
+      type: string
+      description: "Primary contact person at vendor"
+      examples: ["John Smith", "Sarah Johnson"]
+
+    vendor_phone:
+      type: string
+      description: "Vendor contact phone number"
+      examples: ["(206) 555-0100", "+1-800-123-4567"]
+
+    vendor_email:
+      type: string
+      description: "Vendor contact email address"
+      examples: ["orders@vendor.com", "procurement@supplier.com"]
+
+    buyer_name:
+      type: string
+      description: "Name of the person placing the order"
+      examples: ["Michael Chen", "Procurement Department"]
+
+    buyer_department:
+      type: string
+      description: "Department placing the order"
+      examples: ["IT", "Operations", "Procurement", "Facilities"]
+
+    ship_to_address:
+      type: string
+      description: "Shipping destination address"
+
+    bill_to_address:
+      type: string
+      description: "Billing address"
+
+    # Financial
+    currency:
+      type: string
+      description: "Currency code (ISO 4217)"
+      examples: ["USD", "EUR", "GBP"]
+      default: "USD"
+
+    subtotal:
+      type: number
+      description: "Subtotal before tax and shipping"
+      examples: [2500.00, 15750.50]
+
+    tax_amount:
+      type: number
+      description: "Total tax amount"
+      examples: [200.00, 1260.04]
+
+    tax_rate:
+      type: number
+      description: "Tax rate as percentage"
+      examples: [8.0, 8.5]
+
+    shipping_amount:
+      type: number
+      description: "Shipping/freight charges"
+      examples: [50.00, 250.00]
+
+    discount_amount:
+      type: number
+      description: "Total discounts applied"
+      examples: [0.00, 125.00]
+
+    total_amount:
+      type: number
+      description: "Total amount including all charges"
+      examples: [2750.00, 17135.54]
+
+    # Payment Terms
+    payment_terms:
+      type: string
+      description: "Payment terms and conditions"
+      examples: ["Net 30", "Net 15", "Due on receipt", "50% upfront, 50% on delivery"]
+
+    payment_method:
+      type: string
+      description: "Preferred payment method"
+      examples: ["Check", "Wire Transfer", "Credit Card", "ACH"]
+
+    # Items and Line Items
+    line_items:
+      type: array
+      description: "List of items being ordered"
+      items:
+        type: object
+        properties:
+          item_number:
+            type: string
+            description: "Vendor's item number or SKU"
+            examples: ["TS-100", "OFF-001", "HW-500"]
+          description:
+            type: string
+            description: "Item description"
+            examples: ["Wireless Keyboard", "Office Chair", "Laptop Computer"]
+          quantity:
+            type: number
+            description: "Quantity ordered"
+            examples: [5, 1, 25]
+          unit_price:
+            type: number
+            description: "Price per unit"
+            examples: [50.00, 250.00, 1200.00]
+          line_total:
+            type: number
+            description: "Total for this line item"
+            examples: [250.00, 250.00, 30000.00]
+
+    item_count:
+      type: integer
+      description: "Total number of different items"
+      examples: [3, 1, 5]
+
+    total_quantity:
+      type: integer
+      description: "Total quantity of all items combined"
+      examples: [10, 1, 50]
+
+    # Delivery and Timeline
+    requested_delivery_date:
+      type: date
+      description: "Requested delivery date"
+      examples: ["2024-02-01", "2024-11-15"]
+
+    promised_delivery_date:
+      type: date
+      description: "Vendor's promised delivery date"
+      examples: ["2024-02-05", "2024-11-20"]
+
+    shipping_method:
+      type: string
+      description: "Shipping method or carrier"
+      examples: ["UPS Ground", "FedEx Express", "Local Pickup", "Air Freight"]
+
+    fob_terms:
+      type: string
+      description: "FOB (Free on Board) shipping terms"
+      examples: ["FOB Origin", "FOB Destination"]
+
+    # Procurement Details
+    requisition_number:
+      type: string
+      description: "Internal requisition or request number"
+      examples: ["REQ-2024-001", "PUR-REQ-123"]
+
+    cost_center:
+      type: string
+      description: "Cost center or budget code"
+      examples: ["IT-001", "OPS-2024", "CAPEX-001"]
+
+    project_code:
+      type: string
+      description: "Associated project code"
+      examples: ["PROJ-2024", "INIT-001"]
+
+    approval_required:
+      type: boolean
+      description: "Whether additional approval is required"
+      default: false
+
+    approval_level:
+      type: string
+      description: "Approval level required"
+      examples: ["Manager", "Director", "VP", "C-Level"]
+
+    # Special Terms and Conditions
+    special_instructions:
+      type: string
+      description: "Special delivery or handling instructions"
+
+    warranty_terms:
+      type: string
+      description: "Warranty terms and conditions"
+      examples: ["1 year", "2 years", "Manufacturer warranty"]
+
+    return_policy:
+      type: string
+      description: "Return and exchange policy"
+
+    cancellation_terms:
+      type: string
+      description: "Cancellation terms and conditions"
+
+    # Tracking and References
+    vendor_quote_number:
+      type: string
+      description: "Reference to vendor's quote"
+      examples: ["QT-2024-001", "QUOTE-123"]
+
+    contract_reference:
+      type: string
+      description: "Reference to master contract or agreement"
+      examples: ["CONTRACT-2024", "MSA-001"]
+
+    # Quality and Compliance
+    quality_requirements:
+      type: string
+      description: "Quality standards or certifications required"
+      examples: ["ISO 9001", "Industry standard", "Custom specifications"]
+
+    compliance_requirements:
+      type: array
+      description: "Regulatory or compliance requirements"
+      examples: [["RoHS compliant"], ["REACH compliant", "Conflict-free minerals"]]

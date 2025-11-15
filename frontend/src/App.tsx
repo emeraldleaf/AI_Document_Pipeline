@@ -49,20 +49,24 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Search, FileText, Filter,
   Zap, Brain, TrendingUp, Clock, AlertCircle,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Upload
 } from 'lucide-react';
 import { searchDocuments, getStats } from './api';
 import { SearchMode } from './types';
 import SearchResultCard from './components/SearchResultCard';
 import SearchFilters from './components/SearchFilters';
 import StatsPanel from './components/StatsPanel';
+import { BatchUpload } from './components/BatchUpload';
 import { debounce } from './utils';
+
+type View = 'search' | 'batch-upload';
 
 function App() {
   // ==========================================================================
   // STATE MANAGEMENT
   // ==========================================================================
 
+  const [currentView, setCurrentView] = useState<View>('search');
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchMode, setSearchMode] = useState<SearchMode>('keyword');
@@ -317,25 +321,63 @@ function App() {
               </p>
             </div>
 
-            {/* Stats Button */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
-            >
-              <Filter className="w-4 h-4" />
-              {showFilters ? 'Hide' : 'Show'} Filters
-            </button>
+            <div className="flex items-center gap-4">
+              {/* Navigation Tabs */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setCurrentView('search')}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                    currentView === 'search'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Search className="w-4 h-4" />
+                  Search
+                </button>
+                <button
+                  onClick={() => setCurrentView('batch-upload')}
+                  className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                    currentView === 'batch-upload'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  Batch Upload
+                </button>
+              </div>
+
+              {/* Stats Button (only show in search view) */}
+              {currentView === 'search' && (
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  {showFilters ? 'Hide' : 'Show'} Filters
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Stats Panel (collapsible) */}
-      {showFilters && stats && (
+      {currentView === 'search' && showFilters && stats && (
         <StatsPanel stats={stats} />
       )}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Batch Upload View */}
+        {currentView === 'batch-upload' && (
+          <BatchUpload />
+        )}
+
+        {/* Search View */}
+        {currentView === 'search' && (
+          <div>
         {/* Search Bar */}
         <div className="mb-8">
           <form onSubmit={handleSearch} className="relative">
@@ -485,6 +527,7 @@ function App() {
                   key={result.id}
                   result={result}
                   searchMode={searchMode}
+                  query={debouncedQuery}
                 />
               ))}
             </div>
@@ -534,6 +577,8 @@ function App() {
             </div>
           )}
         </div>
+        </div>
+        )}
       </main>
 
       {/* Footer */}

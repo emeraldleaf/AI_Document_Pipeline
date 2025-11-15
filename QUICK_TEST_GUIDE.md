@@ -33,7 +33,7 @@ Once Docker Desktop is running:
 
 ```bash
 # Run the automated test
-./test_postgres.sh
+./scripts/test_postgres.sh
 ```
 
 This will:
@@ -251,4 +251,4 @@ This local test validates **everything** in your ARCHITECTURE.md scalability sec
 
 ---
 
-**Ready?** Install Docker Desktop, then run `./test_postgres.sh`
+**Ready?** Install Docker Desktop, then run `./scripts/test_postgres.sh`

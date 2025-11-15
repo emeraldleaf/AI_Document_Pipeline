@@ -243,14 +243,33 @@ export function truncateText(
 export function highlightText(
   text: string,
   query: string,
-  caseSensitive: boolean = false
+  caseSensitive: boolean = false,
+  searchMode?: string
 ): string {
   if (!query) return text;
 
-  const flags = caseSensitive ? 'g' : 'gi';
-  const regex = new RegExp(`(${escapeRegex(query)})`, flags);
+  // Choose highlighting style based on search mode
+  let highlightStyle = 'background-color: #fef3c7; color: #92400e;'; // Default yellow for keyword
 
-  return text.replace(regex, '<mark>$1</mark>');
+  if (searchMode === 'semantic') {
+    highlightStyle = 'background-color: #dbeafe; color: #1e40af;'; // Blue for semantic
+  } else if (searchMode === 'hybrid') {
+    highlightStyle = 'background-color: #dcfce7; color: #166534;'; // Green for hybrid
+  }
+
+  // Split query into individual words and highlight each one
+  const words = query.split(/\s+/).filter(word => word.length > 0);
+  let highlightedText = text;
+
+  const flags = caseSensitive ? 'g' : 'gi';
+
+  for (const word of words) {
+    if (word.length < 2) continue; // Skip very short words
+    const regex = new RegExp(`(${escapeRegex(word)})`, flags);
+    highlightedText = highlightedText.replace(regex, `<mark style="${highlightStyle} padding: 2px 4px; border-radius: 3px; font-weight: 600;">$1</mark>`);
+  }
+
+  return highlightedText;
 }
 
 /**

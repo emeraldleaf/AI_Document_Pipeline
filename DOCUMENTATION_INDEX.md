@@ -21,7 +21,20 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 
 ## Feature-Specific Guides
 
-### High-Throughput Processing (NEW) ⚡
+### Event-Driven Microservices (NEW) 🚀
+
+| Document | Purpose | Pages | Audience |
+|----------|---------|-------|----------|
+| **[README_MICROSERVICES.md](README_MICROSERVICES.md)** | Microservices overview & quick start | 15 | Everyone |
+| **[MICROSERVICES_QUICK_START.md](MICROSERVICES_QUICK_START.md)** | Get started in 15 minutes | 12 | New users |
+| **[EVENT_DRIVEN_ARCHITECTURE.md](EVENT_DRIVEN_ARCHITECTURE.md)** | Complete architecture guide | 25 | Developers/Architects |
+| **[MICROSERVICES_SUMMARY.md](MICROSERVICES_SUMMARY.md)** | Implementation summary | 18 | Technical leads |
+| **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** | Production deployment | 15 | DevOps/Engineers |
+| **[SQLMODEL_INTEGRATION.md](SQLMODEL_INTEGRATION.md)** | Type-safe database operations | 18 | Developers |
+| **[SQLMODEL_IMPLEMENTATION_SUMMARY.md](SQLMODEL_IMPLEMENTATION_SUMMARY.md)** | SQLModel implementation status | 12 | Technical leads |
+| **[PANACLOUD_COMPARISON.md](PANACLOUD_COMPARISON.md)** | Comparison with Panacloud template | 10 | Architects |
+
+### High-Throughput Processing ⚡
 
 | Document | Purpose | Pages | Audience |
 |----------|---------|-------|----------|
@@ -61,6 +74,7 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | **[TRAINING_GUIDE.md](TRAINING_GUIDE.md)** | Model training & fine-tuning | 16 | ML engineers |
 | **[TRAINING_QUICKSTART.md](TRAINING_QUICKSTART.md)** | Quick training setup | 4 | ML engineers |
 | **[SPLITTING_GUIDE.md](SPLITTING_GUIDE.md)** | Document chunking | 13 | Advanced users |
+| **[SCHEMA_MANAGEMENT_GUIDE.md](SCHEMA_MANAGEMENT_GUIDE.md)** | Managing document type schemas | 12 | Developers |
 
 ## Getting Started
 
@@ -71,6 +85,13 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 ---
 
 ## Documentation by Use Case
+
+### "I want event-driven microservices architecture" 🚀
+1. Start: [MICROSERVICES_QUICK_START.md](MICROSERVICES_QUICK_START.md)
+2. Complete guide: [EVENT_DRIVEN_ARCHITECTURE.md](EVENT_DRIVEN_ARCHITECTURE.md)
+3. Implementation: [MICROSERVICES_SUMMARY.md](MICROSERVICES_SUMMARY.md)
+4. SQLModel: [SQLMODEL_INTEGRATION.md](SQLMODEL_INTEGRATION.md)
+5. Deployment: [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)
 
 ### "I want to classify documents"
 1. Start: [QUICKSTART.md](QUICKSTART.md)
@@ -96,6 +117,11 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 ### "I want to improve classification accuracy"
 1. Training: [TRAINING_GUIDE.md](TRAINING_GUIDE.md)
 2. Quick start: [TRAINING_QUICKSTART.md](TRAINING_QUICKSTART.md)
+
+### "I want to add/modify document types"
+1. Complete guide: [SCHEMA_MANAGEMENT_GUIDE.md](SCHEMA_MANAGEMENT_GUIDE.md)
+2. Current schemas: [LLM_METADATA_EXTRACTION.md](LLM_METADATA_EXTRACTION.md) - Schema Configuration section
+3. Testing: [BENCHMARKING_GUIDE.md](BENCHMARKING_GUIDE.md) - Test Schema Changes section
 
 ### "I need to understand the codebase"
 1. Architecture: [ARCHITECTURE.md](ARCHITECTURE.md)
@@ -166,19 +192,30 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 |----------|-----------|-------------|--------------|
 | Quick Start | 4 | ~23 | ~5,000 |
 | Core Docs | 3 | ~33 | ~7,000 |
+| Microservices 🚀 | 8 | ~125 | ~30,000 |
 | High-Throughput Docs ⚡ | 4 | ~63 | ~15,000 |
 | Search Docs | 4 | ~64 | ~15,000 |
 | Training Docs | 2 | ~20 | ~4,500 |
 | Other | 6 | ~64 | ~14,000 |
-| **Total** | **23** | **~267** | **~60,500** |
+| **Total** | **31** | **~392** | **~90,500** |
 
 ---
 
 ## Document Status
 
-All documentation is **current and up-to-date** as of October 2025.
+All documentation is **current and up-to-date** as of November 2025.
 
-### Recently Added (High-Throughput Feature) ⚡
+### Recently Added (Microservices & SQLModel) 🚀
+- [README_MICROSERVICES.md](README_MICROSERVICES.md) ✨ NEW
+- [MICROSERVICES_QUICK_START.md](MICROSERVICES_QUICK_START.md) ✨ NEW
+- [EVENT_DRIVEN_ARCHITECTURE.md](EVENT_DRIVEN_ARCHITECTURE.md) ✨ NEW
+- [MICROSERVICES_SUMMARY.md](MICROSERVICES_SUMMARY.md) ✨ NEW
+- [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) ✨ NEW
+- [SQLMODEL_INTEGRATION.md](SQLMODEL_INTEGRATION.md) ✨ NEW
+- [SQLMODEL_IMPLEMENTATION_SUMMARY.md](SQLMODEL_IMPLEMENTATION_SUMMARY.md) ✨ NEW
+- [PANACLOUD_COMPARISON.md](PANACLOUD_COMPARISON.md) ✨ NEW
+
+### Previously Added (High-Throughput Feature) ⚡
 - [QUICK_START_500K.md](QUICK_START_500K.md) ✨ NEW
 - [SCALING_GUIDE.md](SCALING_GUIDE.md) ✨ NEW
 - [HIGH_THROUGHPUT_FEATURES.md](HIGH_THROUGHPUT_FEATURES.md) ✨ NEW
@@ -269,7 +306,7 @@ When adding new documentation:
 
 ---
 
-**Last Updated:** October 2025
-**Total Documentation:** 23 active files, ~267 pages, ~60,500 words
-**Latest Feature:** High-Throughput Processing - Process 500K documents in 1 week ⚡
-**Cleaned:** Removed 3 outdated docs, archived 1 historical doc
+**Last Updated:** November 2025
+**Total Documentation:** 31 active files, ~392 pages, ~90,500 words
+**Latest Feature:** Event-Driven Microservices Architecture 🚀 + SQLModel Integration
+**Completed:** SQLModel type-safe database operations (Priority 1 from Panacloud comparison)

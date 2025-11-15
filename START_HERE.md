@@ -1,20 +1,48 @@
-# 🚀 Start Here
+# 🚀 AI Document Pipeline - Start Here
 
-Welcome to the AI Document Classification Pipeline!
+**Welcome!** This is your entry point to the event-driven microservices document processing pipeline.
 
-## What Do You Want To Do?
+---
 
-### 📄 Classify Documents (Basic)
+## ⚡ Quick Start (1 Command)
+
+```bash
+./start_microservices.sh
+```
+
+That's it! The script will:
+- ✅ Start all 11 services
+- ✅ Pull AI models
+- ✅ Run health checks
+- ✅ Display all URLs and next steps
+
+**Time:** ~15 minutes (first time, ~2 minutes after)
+
+---
+
+## 📖 What Do You Want To Do?
+
+### 🎯 **NEW: Event-Driven Microservices (Recommended)**
+→ **[README_MICROSERVICES.md](README_MICROSERVICES.md)** - Modern microservices architecture
+→ **[QUICKREF.md](QUICKREF.md)** - Quick reference guide
+- ✅ Event-driven with RabbitMQ
+- ✅ Horizontally scalable (10-120 docs/min)
+- ✅ Real-time WebSocket progress
+- ✅ 90% cost savings vs cloud
+- ✅ Production-ready
+
+### 📄 Classify Documents (Basic - Original)
 → **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
 
-### ⚡ Process 500K Documents (High-Volume)
+### ⚡ Process 500K Documents (High-Volume - Original)
 → **[QUICK_START_500K.md](QUICK_START_500K.md)** - Process massive volumes fast
 
-### 🔍 Search Documents
+### 🔍 Search Documents (Original)
 → **[SETUP_SEARCH.md](SETUP_SEARCH.md)** - Enable search in 10 minutes
 
 ### 🚀 Deploy to Production
-→ **[CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)** - Scale to cloud
+→ **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Microservices deployment
+→ **[CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)** - Original cloud migration
 
 ---
 
@@ -31,7 +59,7 @@ Then open **Docker Desktop** from Applications and wait for it to start.
 ### Step 2: Run the Test
 
 ```bash
-./test_postgres.sh
+./scripts/test_postgres.sh
 ```
 
 That's it! The script will:

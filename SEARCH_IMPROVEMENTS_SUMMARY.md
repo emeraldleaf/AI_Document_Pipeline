@@ -130,7 +130,7 @@ Modified both keyword and semantic search to:
 kill $(lsof -t -i:8000) $(lsof -t -i:3000)
 
 # Restart with updated code
-./test_full_stack.sh
+./scripts/test_full_stack.sh
 ```
 
 **Test Snippet Extraction:**

@@ -93,76 +93,210 @@ class SearchService:
 
         logger.info("Search service initialized")
 
-    def _extract_snippet(
+    def _extract_multiple_snippets(
         self,
         full_text: str,
         query: str,
-        context_sentences: int = 2,
-        max_snippet_length: int = 500
+        max_snippets: int = 5,
+        snippet_length: int = 200
     ) -> str:
-        """Extract relevant snippet from text showing matches with context.
+        """Extract multiple relevant snippets from text showing different matches.
+
+        For documents with page markers ([Page N]), this will show which pages
+        contain relevant content.
 
         Args:
             full_text: Full document text
             query: Search query
-            context_sentences: Number of sentences before/after match to include
-            max_snippet_length: Maximum length of snippet
+            max_snippets: Maximum number of snippets to extract (default 5)
+            snippet_length: Length of each snippet (default 200)
 
         Returns:
-            Text snippet with matching context
+            Combined text with multiple relevant snippets, preserving page markers
         """
         if not full_text:
             return ""
 
+        # Check if document has page markers
+        import re
+        has_pages = bool(re.search(r'\[Page \d+\]', full_text))
+
+        if has_pages:
+            # Extract snippets per page for better readability
+            return self._extract_page_based_snippets(full_text, query, max_snippets, snippet_length)
+        else:
+            # Use original position-based extraction
+            return self._extract_position_based_snippets(full_text, query, max_snippets, snippet_length)
+
+    def _extract_page_based_snippets(
+        self,
+        full_text: str,
+        query: str,
+        max_snippets: int,
+        snippet_length: int
+    ) -> str:
+        """Extract snippets organized by page number.
+
+        Args:
+            full_text: Full document text with [Page N] markers
+            query: Search query
+            max_snippets: Maximum number of page snippets to show
+            snippet_length: Characters to show per snippet
+
+        Returns:
+            Snippets with page numbers, e.g., "[Page 6] REST API provides..."
+        """
+        import re
+
+        # Split into pages
+        page_pattern = r'\[Page (\d+)\](.*?)(?=\[Page \d+\]|$)'
+        pages = list(re.finditer(page_pattern, full_text, re.DOTALL))
+
+        # Find query terms in each page
+        query_terms = [term.lower() for term in query.split() if len(term) >= 2]
+        page_matches = []
+
+        for page_match in pages:
+            page_num = page_match.group(1)
+            page_content = page_match.group(2)
+            page_content_lower = page_content.lower()
+
+            # Count matches for this page
+            match_count = 0
+            best_match_pos = -1
+
+            for term in query_terms:
+                pos = page_content_lower.find(term)
+                if pos != -1:
+                    match_count += page_content_lower.count(term)
+                    if best_match_pos == -1:
+                        best_match_pos = pos
+
+            if match_count > 0:
+                page_matches.append({
+                    'page_num': page_num,
+                    'content': page_content,
+                    'match_count': match_count,
+                    'match_pos': best_match_pos
+                })
+
+        # Sort by match count (most relevant first)
+        page_matches.sort(key=lambda x: (-x['match_count'], int(x['page_num'])))
+
+        # Extract snippets from top matching pages
+        snippets = []
+        for page_data in page_matches[:max_snippets]:
+            page_num = page_data['page_num']
+            content = page_data['content'].strip()
+            match_pos = page_data['match_pos']
+
+            # Extract snippet around the match
+            if match_pos >= 0:
+                # Center snippet around the match
+                start = max(0, match_pos - snippet_length // 2)
+                end = min(len(content), match_pos + snippet_length // 2)
+
+                # Adjust to word boundaries
+                while start > 0 and content[start] not in ' \n':
+                    start -= 1
+                while end < len(content) and content[end] not in ' \n':
+                    end += 1
+
+                snippet_text = content[start:end].strip()
+
+                # Clean up whitespace
+                snippet_text = ' '.join(snippet_text.split())
+
+                # Add ellipsis if truncated
+                if start > 0:
+                    snippet_text = "..." + snippet_text
+                if end < len(content):
+                    snippet_text = snippet_text + "..."
+
+                snippets.append(f"[Page {page_num}] {snippet_text}")
+            else:
+                # Fallback: show beginning of page
+                snippet_text = ' '.join(content[:snippet_length].split())
+                snippets.append(f"[Page {page_num}] {snippet_text}...")
+
+        if snippets:
+            return " | ".join(snippets)
+        else:
+            # No matches found, return beginning of document
+            return full_text[:snippet_length * 2].strip() + "..."
+
+    def _extract_position_based_snippets(
+        self,
+        full_text: str,
+        query: str,
+        max_snippets: int,
+        snippet_length: int
+    ) -> str:
+        """Extract snippets based on query term positions (original method).
+
+        Args:
+            full_text: Full document text
+            query: Search query
+            max_snippets: Maximum number of snippets
+            snippet_length: Length of each snippet
+
+        Returns:
+            Combined snippets separated by |
+        """
         # Split query into terms
-        query_terms = query.lower().split()
+        query_terms = [term.lower() for term in query.split() if len(term) >= 2]
         text_lower = full_text.lower()
 
-        # Find first occurrence of any query term
-        first_match_pos = -1
-        matched_term = ""
+        # Find all occurrences of query terms
+        matches = []
         for term in query_terms:
-            if len(term) < 3:  # Skip very short terms
-                continue
-            pos = text_lower.find(term)
-            if pos != -1 and (first_match_pos == -1 or pos < first_match_pos):
-                first_match_pos = pos
-                matched_term = term
+            start = 0
+            while True:
+                pos = text_lower.find(term, start)
+                if pos == -1:
+                    break
+                matches.append((pos, term))
+                start = pos + len(term)
 
-        # If no match found, return beginning of document
-        if first_match_pos == -1:
-            return full_text[:max_snippet_length] + ("..." if len(full_text) > max_snippet_length else "")
+        # Sort matches by position and remove duplicates/close matches
+        matches.sort(key=lambda x: x[0])
+        filtered_matches = []
+        for match in matches:
+            # Reduce minimum distance to 150 chars (was 200) to get more snippets
+            if not filtered_matches or match[0] - filtered_matches[-1][0] > 150:
+                filtered_matches.append(match)
 
-        # Split text into sentences (simple approach)
-        import re
-        sentences = re.split(r'(?<=[.!?])\s+', full_text)
+        # Extract snippets around matches
+        snippets = []
+        for pos, term in filtered_matches[:max_snippets]:
+            # Get context around the match
+            start = max(0, pos - snippet_length // 2)
+            end = min(len(full_text), pos + snippet_length // 2)
 
-        # Find which sentence contains the match
-        char_count = 0
-        match_sentence_idx = 0
-        for i, sentence in enumerate(sentences):
-            char_count += len(sentence) + 1  # +1 for space
-            if char_count > first_match_pos:
-                match_sentence_idx = i
-                break
+            # Adjust to word boundaries
+            while start > 0 and full_text[start] not in ' \n':
+                start -= 1
+            while end < len(full_text) and full_text[end] not in ' \n':
+                end += 1
 
-        # Get context sentences before and after
-        start_idx = max(0, match_sentence_idx - context_sentences)
-        end_idx = min(len(sentences), match_sentence_idx + context_sentences + 1)
+            snippet = full_text[start:end].strip()
+            # Clean up whitespace
+            snippet = ' '.join(snippet.split())
 
-        # Build snippet
-        snippet_sentences = sentences[start_idx:end_idx]
-        snippet = " ".join(snippet_sentences)
+            if snippet:
+                # Add ellipsis
+                if start > 0:
+                    snippet = "..." + snippet
+                if end < len(full_text):
+                    snippet = snippet + "..."
+                snippets.append(snippet)
 
-        # Truncate if too long
-        if len(snippet) > max_snippet_length:
-            snippet = snippet[:max_snippet_length] + "..."
-
-        # Add ellipsis at start if not beginning of document
-        if start_idx > 0:
-            snippet = "..." + snippet
-
-        return snippet
+        # Combine snippets
+        if snippets:
+            return " | ".join(snippets)
+        else:
+            # Fallback to beginning of document
+            return full_text[:snippet_length * 2] + ("..." if len(full_text) > snippet_length * 2 else "")
 
     def keyword_search(
         self,
@@ -229,7 +363,7 @@ class SearchService:
                     # Extract snippet from full content if available
                     full_content = row[7] or ""
                     if full_content:
-                        snippet = self._extract_snippet(full_content, query)
+                        snippet = self._extract_multiple_snippets(full_content, query)
                     else:
                         snippet = row[6] or ""  # Fall back to content_preview
 
@@ -331,7 +465,7 @@ class SearchService:
                     # Extract snippet from full content if available
                     full_content = row[7] or ""
                     if full_content:
-                        snippet = self._extract_snippet(full_content, query)
+                        snippet = self._extract_multiple_snippets(full_content, query)
                     else:
                         snippet = row[6] or ""  # Fall back to content_preview
 

@@ -14,7 +14,7 @@ Quick guide to test your PostgreSQL database and search functionality in your lo
 
 ```bash
 # Run the comprehensive test script
-./test_postgres.sh
+./scripts/test_postgres.sh
 ```
 
 This script will:
@@ -470,4 +470,4 @@ rm -rf documents/output/*
 
 ---
 
-**Ready to test!** Run `./test_postgres.sh` to get started.
+**Ready to test!** Run `./scripts/test_postgres.sh` to get started.

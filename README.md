@@ -26,6 +26,14 @@ Automatically classify and organize multi-format documents (PDF, Excel, Word, et
 - **Confidence Scoring**: Optional reasoning explanations for each classification
 - **Customizable Categories**: Define your own classification categories
 
+### Structured Metadata Extraction (NEW)
+- **Schema-Driven Extraction**: Extract business-relevant data from documents using configurable YAML schemas
+- **5 Document Types Supported**: Invoices, contracts, reports, technical manuals, correspondence
+- **79.9% F1 Accuracy**: Across diverse document types with comprehensive benchmarking
+- **PDF Processing**: Advanced Docling integration for complex PDF layouts and tables
+- **Extensible**: Add new document types without code changes
+- **See [LLM_METADATA_EXTRACTION.md](LLM_METADATA_EXTRACTION.md) for details**
+
 ### Advanced Search (NEW)
 - **Complete Full-Text Search**: Search ALL text from EVERY page in your documents (PDFs, Word, Excel)
 - **Keyword Search**: Lightning-fast PostgreSQL FTS with ranking - no size or page limits

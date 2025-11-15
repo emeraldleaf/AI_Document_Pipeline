@@ -1,0 +1,165 @@
+version: '3.8'
+
+services:
+  # ===========================================================================
+  # OPENSEARCH - Search and Analytics Engine
+  # ===========================================================================
+  opensearch:
+    image: opensearchproject/opensearch:2.11.0
+    container_name: doc_pipeline_opensearch
+    environment:
+      # Cluster settings
+      - cluster.name=doc-search-cluster
+      - node.name=opensearch-node1
+      - discovery.type=single-node
+
+      # Disable security for development (enable in production!)
+      - DISABLE_SECURITY_PLUGIN=true
+
+      # Performance tuning
+      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g"  # 2GB heap (adjust based on RAM)
+      - bootstrap.memory_lock=true
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
+    ports:
+      - "9200:9200"  # REST API
+      - "9600:9600"  # Performance Analyzer
+
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+
+    networks:
+      - doc_network
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===========================================================================
+  # OPENSEARCH DASHBOARDS - Visualization and Management UI
+  # ===========================================================================
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.11.0
+    container_name: doc_pipeline_dashboards
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+
+    ports:
+      - "5601:5601"  # Dashboard UI
+
+    networks:
+      - doc_network
+
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ===========================================================================
+  # POSTGRESQL - Metadata Store (Optional - for hybrid architecture)
+  # ===========================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: doc_pipeline_postgres
+    environment:
+      POSTGRES_DB: documents
+      POSTGRES_USER: docuser
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    networks:
+      - doc_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docuser -d documents"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  opensearch_data:
+    driver: local
+  postgres_data:
+    driver: local
+
+networks:
+  doc_network:
+    driver: bridge
+
+# ==============================================================================
+# USAGE INSTRUCTIONS
+# ==============================================================================
+#
+# Start all services:
+#   docker-compose -f docker-compose-opensearch.yml up -d
+#
+# Start only OpenSearch (no Postgres):
+#   docker-compose -f docker-compose-opensearch.yml up -d opensearch opensearch-dashboards
+#
+# View logs:
+#   docker-compose -f docker-compose-opensearch.yml logs -f opensearch
+#
+# Stop services:
+#   docker-compose -f docker-compose-opensearch.yml down
+#
+# Remove data volumes (⚠️ deletes all indexed documents):
+#   docker-compose -f docker-compose-opensearch.yml down -v
+#
+# ==============================================================================
+# ACCESS URLS
+# ==============================================================================
+#
+# OpenSearch REST API: http://localhost:9200
+# OpenSearch Dashboards: http://localhost:5601
+# PostgreSQL: localhost:5432
+#
+# ==============================================================================
+# TESTING CONNECTION
+# ==============================================================================
+#
+# Test OpenSearch:
+#   curl http://localhost:9200
+#   curl http://localhost:9200/_cluster/health
+#
+# Test Dashboards:
+#   Open http://localhost:5601 in browser
+#
+# ==============================================================================
+# PRODUCTION CONSIDERATIONS
+# ==============================================================================
+#
+# For production, you should:
+# 1. Enable security plugin (remove DISABLE_SECURITY_PLUGIN)
+# 2. Set up SSL/TLS certificates
+# 3. Configure authentication (username/password or certificates)
+# 4. Increase heap size based on available RAM (4-8GB recommended)
+# 5. Use multiple nodes for high availability
+# 6. Configure backups (snapshots to S3/GCS/Azure)
+# 7. Set up monitoring and alerting
+# 8. Tune index settings based on workload
+#
+# Production example (3-node cluster):
+#   - discovery.seed_hosts=["opensearch1:9300", "opensearch2:9300", "opensearch3:9300"]
+#   - cluster.initial_master_nodes=["opensearch1", "opensearch2", "opensearch3"]
+#   - OPENSEARCH_JAVA_OPTS=-Xms4g -Xmx4g
+#
+# ==============================================================================

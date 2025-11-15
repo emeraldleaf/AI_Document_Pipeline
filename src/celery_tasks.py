@@ -502,360 +502,337 @@ if CELERY_AVAILABLE:
         }
 
 
-# ==============================================================================
-# DISTRIBUTED PROCESSOR CLASS
-# ==============================================================================
+    # ==============================================================================
+    # DISTRIBUTED PROCESSOR CLASS
+    # ==============================================================================
 
-class CeleryDistributedProcessor:
-    """
-    Distributed document processor using Celery.
-
-    WHAT IT DOES:
-        Manages distributed document processing across multiple worker machines.
-        Submits tasks, tracks progress, retrieves results.
-
-    HOW IT WORKS:
-        1. Client creates CeleryDistributedProcessor
-        2. Client calls submit_batch() or submit_directory()
-        3. Processor submits tasks to Redis queue
-        4. Workers pick up tasks and process documents
-        5. Client can check_progress() to monitor
-        6. Client can wait_for_completion() to wait
-        7. Client can get_results() to retrieve all results
-
-    KEY FEATURES:
-        - **Batch Submission**: Submit thousands of tasks at once
-        - **Progress Tracking**: Real-time progress monitoring
-        - **Chunk Management**: Automatically splits huge batches
-        - **Result Retrieval**: Get all results when done
-        - **Wait with Progress**: Block until complete with progress bar
-
-    SCALING EXAMPLE:
-        Machine 1: celery worker --concurrency=8
-        Machine 2: celery worker --concurrency=8
-        Machine 3: celery worker --concurrency=8
-        Total: 24 concurrent documents
-
-        Add Machine 4, 5, 6... for more throughput!
-
-    EXAMPLE USAGE:
-        ```python
-        # Create processor
-        processor = CeleryDistributedProcessor(
-            categories=["invoices", "contracts", "reports"],
-            use_database=True
-        )
-
-        # Submit directory for processing
-        batch_id = processor.submit_directory(Path("documents"))
-        print(f"Submitted batch: {batch_id}")
-
-        # Check progress periodically
-        progress = processor.check_progress(batch_id)
-        print(f"Progress: {progress['completed']}/{progress['total_tasks']}")
-
-        # Or wait until complete (with progress bar)
-        stats = processor.wait_for_completion(batch_id)
-        print(f"Complete: {stats['successful']} successful, {stats['failed']} failed")
-
-        # Get all results
-        results = processor.get_results(batch_id)
-        for result in results:
-            if result['success']:
-                print(f"{result['file_name']}: {result['category']}")
-        ```
-
-    COMPARISON WITH OTHER PROCESSORS:
-        parallel_processor.py:
-        - Single machine
-        - Multiprocessing
-        - ~2,400 docs/hour (8 cores)
-
-        async_batch_processor.py:
-        - Single machine
-        - Async I/O
-        - ~3,000 docs/hour
-
-        celery_tasks.py (this file):
-        - Multiple machines
-        - Distributed
-        - ~24,000 docs/hour (10 machines × 8 cores)
-        - Scales linearly: 20 machines = ~48,000 docs/hour!
-    """
-
-    def __init__(
-        self,
-        categories: Optional[List[str]] = None,
-        use_database: bool = False,
-        batch_size: int = 1000,
-    ):
+    class CeleryDistributedProcessor:
         """
-        Initialize distributed processor.
+        Distributed document processor using Celery.
 
-        Args:
-            categories: Classification categories (default: from config)
-            use_database: Enable database storage
-            batch_size: Max documents per batch chunk (default: 1000)
+        WHAT IT DOES:
+            Manages distributed document processing across multiple worker machines.
+            Submits tasks, tracks progress, retrieves results.
 
-        What happens during initialization:
-        1. Check Celery is installed
-        2. Load configuration
-        3. Set batch size for chunking
+        HOW IT WORKS:
+            1. Client creates CeleryDistributedProcessor
+            2. Client calls submit_batch() or submit_directory()
+            3. Processor submits tasks to Redis queue
+            4. Workers pick up tasks and process documents
+            5. Client can check_progress() to monitor
+            6. Client can wait_for_completion() to wait
+            7. Client can get_results() to retrieve all results
 
-        Why batch_size=1000?
-        - Celery groups have practical limits
-        - 1000 tasks per group is efficient
-        - Larger batches are split into multiple groups
-        - Can be tuned based on your setup
+        KEY FEATURES:
+            - **Batch Submission**: Submit thousands of tasks at once
+            - **Progress Tracking**: Real-time progress monitoring
+            - **Chunk Management**: Automatically splits huge batches
+            - **Result Retrieval**: Get all results when done
+            - **Wait with Progress**: Block until complete with progress bar
 
-        Example:
-            >>> # Basic setup
-            >>> processor = CeleryDistributedProcessor()
+        SCALING EXAMPLE:
+            Machine 1: celery worker --concurrency=8
+            Machine 2: celery worker --concurrency=8
+            Machine 3: celery worker --concurrency=8
+            Total: 24 concurrent documents
 
-            >>> # With database and custom categories
-            >>> processor = CeleryDistributedProcessor(
-            ...     categories=["invoices", "contracts", "reports", "other"],
-            ...     use_database=True,
-            ...     batch_size=500  # Smaller chunks
-            ... )
-        """
-        # Check if Celery is available
-        if not CELERY_AVAILABLE:
-            raise ImportError(
-                "Celery is required for distributed processing. "
-                "Install with: pip install celery redis"
+            Add Machine 4, 5, 6... for more throughput!
+
+        EXAMPLE USAGE:
+            ```python
+            # Create processor
+            processor = CeleryDistributedProcessor(
+                categories=["invoices", "contracts", "reports"],
+                use_database=True
             )
 
-        # Load configuration
-        self.categories = categories or settings.category_list
-        self.use_database = use_database
-        self.batch_size = batch_size
+            # Submit directory for processing
+            batch_id = processor.submit_directory(Path("documents"))
+            print(f"Submitted batch: {batch_id}")
 
-        logger.info("Initialized CeleryDistributedProcessor")
+            # Check progress periodically
+            progress = processor.check_progress(batch_id)
+            print(f"Progress: {progress['completed']}/{progress['total_tasks']}")
 
-    # ==========================================================================
-    # BATCH SUBMISSION
-    # ==========================================================================
+            # Or wait until complete (with progress bar)
+            stats = processor.wait_for_completion(batch_id)
+            print(f"Complete: {stats['successful']} successful, {stats['failed']} failed")
 
-    def submit_batch(
-        self,
-        file_paths: List[Path],
-        include_reasoning: bool = False
-    ) -> str:
+            # Get all results
+            results = processor.get_results(batch_id)
+            for result in results:
+                if result['success']:
+                    print(f"{result['file_name']}: {result['category']}")
+            ```
+
+        COMPARISON WITH OTHER PROCESSORS:
+            parallel_processor.py:
+            - Single machine
+            - Multiprocessing
+            - ~2,400 docs/hour (8 cores)
+
+            async_batch_processor.py:
+            - Single machine
+            - Async I/O
+            - ~3,000 docs/hour
+
+            celery_tasks.py (this file):
+            - Multiple machines
+            - Distributed
+            - ~24,000 docs/hour (10 machines × 8 cores)
+            - Scales linearly: 20 machines = ~48,000 docs/hour!
         """
-        Submit a batch of documents for processing.
 
-        This queues tasks for all documents in the batch.
-        Workers will pick them up and process them.
+        def __init__(
+            self,
+            categories: Optional[List[str]] = None,
+            use_database: bool = False,
+            batch_size: int = 1000,
+        ):
+            """
+            Initialize distributed processor.
 
-        Args:
-            file_paths: List of document paths
-            include_reasoning: Include AI reasoning in results
+            Args:
+                categories: Classification categories (default: from config)
+                use_database: Enable database storage
+                batch_size: Max documents per batch chunk (default: 1000)
 
-        Returns:
-            Batch ID string for tracking progress
+            What happens during initialization:
+            1. Check Celery is installed
+            2. Load configuration
+            3. Set batch size for chunking
 
-        How it works:
-        1. Convert Path objects to strings (for JSON serialization)
-        2. Check if batch is too large (>batch_size)
-        3. If too large, split into chunks
-        4. Submit each chunk as a separate group
-        5. Return combined batch ID
+            Why batch_size=1000?
+            - Celery groups have practical limits
+            - 1000 tasks per group is efficient
+            - Larger batches are split into multiple groups
+            - Can be tuned based on your setup
 
-        Why split large batches?
-        - Celery groups have practical limits
-        - Smaller groups = better load distribution
-        - Can track progress per chunk
-        - More resilient to failures
+            Example:
+                >>> # Basic setup
+                >>> processor = CeleryDistributedProcessor()
 
-        Example:
-            >>> processor = CeleryDistributedProcessor()
-            >>> files = [Path(f"doc{i}.pdf") for i in range(10000)]
-            >>> batch_id = processor.submit_batch(files)
-            >>> print(f"Submitted {len(files)} documents: {batch_id}")
-        """
-        # Convert Path objects to strings for JSON serialization
-        file_path_strs = [str(fp) for fp in file_paths]
+                >>> # With database and custom categories
+                >>> processor = CeleryDistributedProcessor(
+                ...     categories=["invoices", "contracts", "reports", "other"],
+                ...     use_database=True,
+                ...     batch_size=500  # Smaller chunks
+                ... )
+            """
+            # Check if Celery is available
+            if not CELERY_AVAILABLE:
+                raise ImportError(
+                    "Celery is required for distributed processing. "
+                    "Install with: pip install celery redis"
+                )
 
-        # Check if batch needs chunking
-        if len(file_paths) > self.batch_size:
-            # Large batch: split into chunks
-            logger.info(f"Splitting batch of {len(file_paths)} into chunks of {self.batch_size}")
+            # Load configuration
+            self.categories = categories or settings.category_list
+            self.use_database = use_database
+            self.batch_size = batch_size
 
-            batch_ids = []
+            logger.info("Initialized CeleryDistributedProcessor")
 
-            # Submit chunks
-            for i in range(0, len(file_path_strs), self.batch_size):
-                chunk = file_path_strs[i:i + self.batch_size]
+        # ==========================================================================
+        # BATCH SUBMISSION
+        # ==========================================================================
 
-                # Submit this chunk
+        def submit_batch(
+            self,
+            file_paths: List[Path],
+            include_reasoning: bool = False
+        ) -> str:
+            """
+            Submit a batch of documents for processing.
+
+            This queues tasks for all documents in the batch.
+            Workers will pick them up and process them.
+
+            Args:
+                file_paths: List of document paths
+                include_reasoning: Include AI reasoning in results
+
+            Returns:
+                Batch ID string for tracking progress
+
+            How it works:
+            1. Convert Path objects to strings (for JSON serialization)
+            2. Check if batch is too large (>batch_size)
+            3. If too large, split into chunks
+            4. Submit each chunk as a separate group
+            5. Return combined batch ID
+
+            Why split large batches?
+            - Celery groups have practical limits
+            - Smaller groups = better load distribution
+            - Can track progress per chunk
+            - More resilient to failures
+
+            Example:
+                >>> processor = CeleryDistributedProcessor()
+                >>> files = [Path(f"doc{i}.pdf") for i in range(10000)]
+                >>> batch_id = processor.submit_batch(files)
+                >>> print(f"Submitted {len(files)} documents: {batch_id}")
+            """
+            # Convert Path objects to strings for JSON serialization
+            file_path_strs = [str(fp) for fp in file_paths]
+
+            # Check if batch needs chunking
+            if len(file_paths) > self.batch_size:
+                # Large batch: split into chunks
+                logger.info(f"Splitting batch of {len(file_paths)} into chunks of {self.batch_size}")
+
+                batch_ids = []
+
+                # Submit chunks
+                for i in range(0, len(file_path_strs), self.batch_size):
+                    chunk = file_path_strs[i:i + self.batch_size]
+
+                    # Submit this chunk
+                    result = classify_batch_task.delay(
+                        chunk,
+                        self.categories,
+                        include_reasoning,
+                        self.use_database
+                    )
+                    batch_ids.append(result.id)
+
+                logger.info(f"Submitted {len(batch_ids)} batch chunks")
+
+                # Return comma-separated IDs
+                # (check_progress and get_results handle this format)
+                return ",".join(batch_ids)
+
+            else:
+                # Small batch: submit as single group
                 result = classify_batch_task.delay(
-                    chunk,
+                    file_path_strs,
                     self.categories,
                     include_reasoning,
                     self.use_database
                 )
-                batch_ids.append(result.id)
 
-            logger.info(f"Submitted {len(batch_ids)} batch chunks")
+                logger.info(f"Submitted batch: {result.id}")
+                return result.id
 
-            # Return comma-separated IDs
-            # (check_progress and get_results handle this format)
-            return ",".join(batch_ids)
+        def submit_directory(
+            self,
+            input_dir: Path,
+            recursive: bool = True,
+            include_reasoning: bool = False,
+            file_extensions: Optional[List[str]] = None
+        ) -> str:
+            """
+            Submit all documents in a directory for processing.
 
-        else:
-            # Small batch: submit as single group
-            result = classify_batch_task.delay(
-                file_path_strs,
-                self.categories,
-                include_reasoning,
-                self.use_database
-            )
+            Convenience method that:
+            1. Scans directory for documents
+            2. Filters by extension
+            3. Submits as batch
 
-            logger.info(f"Submitted batch: {result.id}")
-            return result.id
+            Args:
+                input_dir: Directory containing documents
+                recursive: Also process subdirectories (default: True)
+                include_reasoning: Include AI reasoning
+                file_extensions: File types to process (default: all supported)
 
-    def submit_directory(
-        self,
-        input_dir: Path,
-        recursive: bool = True,
-        include_reasoning: bool = False,
-        file_extensions: Optional[List[str]] = None
-    ) -> str:
-        """
-        Submit all documents in a directory for processing.
+            Returns:
+                Batch ID for tracking
 
-        Convenience method that:
-        1. Scans directory for documents
-        2. Filters by extension
-        3. Submits as batch
+            Example:
+                >>> processor = CeleryDistributedProcessor()
+                >>> batch_id = processor.submit_directory(
+                ...     Path("documents/invoices"),
+                ...     recursive=True
+                ... )
+                >>> print(f"Submitted directory: {batch_id}")
+            """
+            logger.info(f"Scanning directory: {input_dir}")
 
-        Args:
-            input_dir: Directory containing documents
-            recursive: Also process subdirectories (default: True)
-            include_reasoning: Include AI reasoning
-            file_extensions: File types to process (default: all supported)
+            # Default extensions
+            if file_extensions is None:
+                file_extensions = [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".txt", ".md"]
 
-        Returns:
-            Batch ID for tracking
+            # Collect files
+            file_paths = []
+            if recursive:
+                # Search all subdirectories
+                for ext in file_extensions:
+                    file_paths.extend(input_dir.rglob(f"*{ext}"))
+            else:
+                # Search only top level
+                for ext in file_extensions:
+                    file_paths.extend(input_dir.glob(f"*{ext}"))
 
-        Example:
-            >>> processor = CeleryDistributedProcessor()
-            >>> batch_id = processor.submit_directory(
-            ...     Path("documents/invoices"),
-            ...     recursive=True
-            ... )
-            >>> print(f"Submitted directory: {batch_id}")
-        """
-        logger.info(f"Scanning directory: {input_dir}")
+            # Filter to only files (not directories)
+            file_paths = [f for f in file_paths if f.is_file()]
 
-        # Default extensions
-        if file_extensions is None:
-            file_extensions = [".pdf", ".docx", ".doc", ".xlsx", ".xls", ".txt", ".md"]
+            logger.info(f"Found {len(file_paths)} documents to submit")
 
-        # Collect files
-        file_paths = []
-        if recursive:
-            # Search all subdirectories
-            for ext in file_extensions:
-                file_paths.extend(input_dir.rglob(f"*{ext}"))
-        else:
-            # Search only top level
-            for ext in file_extensions:
-                file_paths.extend(input_dir.glob(f"*{ext}"))
+            if not file_paths:
+                logger.warning("No documents found")
+                return ""
 
-        # Filter to only files (not directories)
-        file_paths = [f for f in file_paths if f.is_file()]
+            # Submit as batch
+            return self.submit_batch(file_paths, include_reasoning)
 
-        logger.info(f"Found {len(file_paths)} documents to submit")
+        # ==========================================================================
+        # PROGRESS TRACKING
+        # ==========================================================================
 
-        if not file_paths:
-            logger.warning("No documents found")
-            return ""
+        def check_progress(self, batch_id: str) -> Dict[str, Any]:
+            """
+            Check progress of a batch (non-blocking).
 
-        # Submit as batch
-        return self.submit_batch(file_paths, include_reasoning)
+            Queries Celery to see how many tasks are complete.
 
-    # ==========================================================================
-    # PROGRESS TRACKING
-    # ==========================================================================
+            Args:
+                batch_id: Batch ID from submission
 
-    def check_progress(self, batch_id: str) -> Dict[str, Any]:
-        """
-        Check progress of a batch (non-blocking).
+            Returns:
+                Dictionary with progress information:
+                    - batch_id: The batch ID
+                    - total_tasks: Total number of tasks
+                    - completed: How many finished
+                    - successful: How many succeeded
+                    - failed: How many failed
+                    - pending: How many still waiting
+                    - progress_percent: Completion percentage
+                    - status: Overall status
 
-        Queries Celery to see how many tasks are complete.
+            This is non-blocking - returns immediately with current status.
 
-        Args:
-            batch_id: Batch ID from submission
+            Example:
+                >>> progress = processor.check_progress(batch_id)
+                >>> print(f"Progress: {progress['progress_percent']:.1f}%")
+                >>> print(f"Status: {progress['completed']}/{progress['total_tasks']}")
+            """
+            from celery.result import AsyncResult
 
-        Returns:
-            Dictionary with progress information:
-                - batch_id: The batch ID
-                - total_tasks: Total number of tasks
-                - completed: How many finished
-                - successful: How many succeeded
-                - failed: How many failed
-                - pending: How many still waiting
-                - progress_percent: Completion percentage
-                - status: Overall status
+            # Handle multiple batch IDs (from chunked batches)
+            if ',' in batch_id:
+                batch_ids = batch_id.split(',')
+                all_results = []
 
-        This is non-blocking - returns immediately with current status.
+                # Get result objects for each chunk
+                for bid in batch_ids:
+                    result = AsyncResult(bid, app=app)
+                    all_results.append(result)
 
-        Example:
-            >>> progress = processor.check_progress(batch_id)
-            >>> print(f"Progress: {progress['progress_percent']:.1f}%")
-            >>> print(f"Status: {progress['completed']}/{progress['total_tasks']}")
-        """
-        from celery.result import AsyncResult
-
-        # Handle multiple batch IDs (from chunked batches)
-        if ',' in batch_id:
-            batch_ids = batch_id.split(',')
-            all_results = []
-
-            # Get result objects for each chunk
-            for bid in batch_ids:
-                result = AsyncResult(bid, app=app)
-                all_results.append(result)
-
-            # Aggregate stats across all chunks
-            total = sum(len(r.children) if hasattr(r, 'children') else 0 for r in all_results)
-            completed = sum(
-                sum(1 for c in r.children if c.ready()) if hasattr(r, 'children') else 0
-                for r in all_results
-            )
-            successful = sum(
-                sum(1 for c in r.children if c.successful()) if hasattr(r, 'children') else 0
-                for r in all_results
-            )
-            failed = sum(
-                sum(1 for c in r.children if c.failed()) if hasattr(r, 'children') else 0
-                for r in all_results
-            )
-
-            return {
-                'batch_id': batch_id,
-                'total_tasks': total,
-                'completed': completed,
-                'successful': successful,
-                'failed': failed,
-                'pending': total - completed,
-                'progress_percent': (completed / total * 100) if total > 0 else 0,
-                'status': 'completed' if completed == total else 'processing'
-            }
-
-        else:
-            # Single batch ID
-            result = AsyncResult(batch_id, app=app)
-
-            if hasattr(result, 'children'):
-                # This is a group result
-                children = result.children
-                total = len(children)
-                completed = sum(1 for c in children if c.ready())
-                successful = sum(1 for c in children if c.successful())
-                failed = sum(1 for c in children if c.failed())
+                # Aggregate stats across all chunks
+                total = sum(len(r.children) if hasattr(r, 'children') else 0 for r in all_results)
+                completed = sum(
+                    sum(1 for c in r.children if c.ready()) if hasattr(r, 'children') else 0
+                    for r in all_results
+                )
+                successful = sum(
+                    sum(1 for c in r.children if c.successful()) if hasattr(r, 'children') else 0
+                    for r in all_results
+                )
+                failed = sum(
+                    sum(1 for c in r.children if c.failed()) if hasattr(r, 'children') else 0
+                    for r in all_results
+                )
 
                 return {
                     'batch_id': batch_id,
@@ -865,152 +842,176 @@ class CeleryDistributedProcessor:
                     'failed': failed,
                     'pending': total - completed,
                     'progress_percent': (completed / total * 100) if total > 0 else 0,
-                    'status': result.state
+                    'status': 'completed' if completed == total else 'processing'
                 }
+
             else:
-                # Single task result
-                return {
-                    'batch_id': batch_id,
-                    'status': result.state,
-                    'info': str(result.info)
-                }
+                # Single batch ID
+                result = AsyncResult(batch_id, app=app)
 
-    def get_results(self, batch_id: str, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
-        """
-        Get results from a batch (BLOCKING - waits until complete).
-
-        This retrieves all classification results.
-        Blocks until all tasks are finished.
-
-        Args:
-            batch_id: Batch ID from submission
-            timeout: Optional timeout in seconds (None = wait forever)
-
-        Returns:
-            List of result dictionaries, one per document
-
-        WARNING: This blocks until all tasks complete!
-        For non-blocking progress, use check_progress() instead.
-
-        Example:
-            >>> # Submit batch
-            >>> batch_id = processor.submit_directory(Path("documents"))
-            >>>
-            >>> # Wait and get results (blocks)
-            >>> results = processor.get_results(batch_id, timeout=3600)  # 1 hour max
-            >>>
-            >>> # Process results
-            >>> for result in results:
-            ...     if result['success']:
-            ...         print(f"{result['file_name']}: {result['category']}")
-            ...     else:
-            ...         print(f"{result['file_name']}: FAILED - {result['error']}")
-        """
-        from celery.result import AsyncResult
-
-        # Handle multiple batch IDs (from chunked batches)
-        if ',' in batch_id:
-            batch_ids = batch_id.split(',')
-            all_results = []
-
-            # Get results from each chunk
-            for bid in batch_ids:
-                result = AsyncResult(bid, app=app)
                 if hasattr(result, 'children'):
-                    # Get result from each child task (blocks)
-                    all_results.extend([c.get(timeout=timeout) for c in result.children])
+                    # This is a group result
+                    children = result.children
+                    total = len(children)
+                    completed = sum(1 for c in children if c.ready())
+                    successful = sum(1 for c in children if c.successful())
+                    failed = sum(1 for c in children if c.failed())
 
-            return all_results
+                    return {
+                        'batch_id': batch_id,
+                        'total_tasks': total,
+                        'completed': completed,
+                        'successful': successful,
+                        'failed': failed,
+                        'pending': total - completed,
+                        'progress_percent': (completed / total * 100) if total > 0 else 0,
+                        'status': result.state
+                    }
+                else:
+                    # Single task result
+                    return {
+                        'batch_id': batch_id,
+                        'status': result.state,
+                        'info': str(result.info)
+                    }
 
-        else:
-            # Single batch ID
-            result = AsyncResult(batch_id, app=app)
+        def get_results(self, batch_id: str, timeout: Optional[float] = None) -> List[Dict[str, Any]]:
+            """
+            Get results from a batch (BLOCKING - waits until complete).
 
-            if hasattr(result, 'children'):
-                # Group result: get from all children (blocks)
-                return [child.get(timeout=timeout) for child in result.children]
+            This retrieves all classification results.
+            Blocks until all tasks are finished.
+
+            Args:
+                batch_id: Batch ID from submission
+                timeout: Optional timeout in seconds (None = wait forever)
+
+            Returns:
+                List of result dictionaries, one per document
+
+            WARNING: This blocks until all tasks complete!
+            For non-blocking progress, use check_progress() instead.
+
+            Example:
+                >>> # Submit batch
+                >>> batch_id = processor.submit_directory(Path("documents"))
+                >>>
+                >>> # Wait and get results (blocks)
+                >>> results = processor.get_results(batch_id, timeout=3600)  # 1 hour max
+                >>>
+                >>> # Process results
+                >>> for result in results:
+                ...     if result['success']:
+                ...         print(f"{result['file_name']}: {result['category']}")
+                ...     else:
+                ...         print(f"{result['file_name']}: FAILED - {result['error']}")
+            """
+            from celery.result import AsyncResult
+
+            # Handle multiple batch IDs (from chunked batches)
+            if ',' in batch_id:
+                batch_ids = batch_id.split(',')
+                all_results = []
+
+                # Get results from each chunk
+                for bid in batch_ids:
+                    result = AsyncResult(bid, app=app)
+                    if hasattr(result, 'children'):
+                        # Get result from each child task (blocks)
+                        all_results.extend([c.get(timeout=timeout) for c in result.children])
+
+                return all_results
+
             else:
-                # Single task result
-                return [result.get(timeout=timeout)]
+                # Single batch ID
+                result = AsyncResult(batch_id, app=app)
 
-    def wait_for_completion(
-        self,
-        batch_id: str,
-        poll_interval: float = 5.0,
-        show_progress: bool = True
-    ) -> Dict[str, Any]:
-        """
-        Wait for batch completion with progress tracking (BLOCKING).
+                if hasattr(result, 'children'):
+                    # Group result: get from all children (blocks)
+                    return [child.get(timeout=timeout) for child in result.children]
+                else:
+                    # Single task result
+                    return [result.get(timeout=timeout)]
 
-        This polls for progress and displays a progress bar.
-        Blocks until all tasks complete.
+        def wait_for_completion(
+            self,
+            batch_id: str,
+            poll_interval: float = 5.0,
+            show_progress: bool = True
+        ) -> Dict[str, Any]:
+            """
+            Wait for batch completion with progress tracking (BLOCKING).
 
-        Args:
-            batch_id: Batch ID from submission
-            poll_interval: Seconds between progress checks (default: 5.0)
-            show_progress: Show progress bar (default: True)
+            This polls for progress and displays a progress bar.
+            Blocks until all tasks complete.
 
-        Returns:
-            Final statistics dictionary with completion stats
+            Args:
+                batch_id: Batch ID from submission
+                poll_interval: Seconds between progress checks (default: 5.0)
+                show_progress: Show progress bar (default: True)
 
-        This is useful for:
-        - CLI scripts that should wait for completion
-        - Batch jobs that need to know when done
-        - Monitoring progress in real-time
+            Returns:
+                Final statistics dictionary with completion stats
 
-        Example:
-            >>> # Submit batch
-            >>> batch_id = processor.submit_directory(Path("documents"))
-            >>>
-            >>> # Wait with progress bar
-            >>> stats = processor.wait_for_completion(batch_id)
-            >>> # Shows: Processing documents: 100%|████████| 10000/10000
-            >>>
-            >>> print(f"Complete! {stats['successful']} successful, {stats['failed']} failed")
-        """
-        import time
-        from tqdm import tqdm
+            This is useful for:
+            - CLI scripts that should wait for completion
+            - Batch jobs that need to know when done
+            - Monitoring progress in real-time
 
-        logger.info(f"Waiting for batch {batch_id} to complete...")
+            Example:
+                >>> # Submit batch
+                >>> batch_id = processor.submit_directory(Path("documents"))
+                >>>
+                >>> # Wait with progress bar
+                >>> stats = processor.wait_for_completion(batch_id)
+                >>> # Shows: Processing documents: 100%|████████| 10000/10000
+                >>>
+                >>> print(f"Complete! {stats['successful']} successful, {stats['failed']} failed")
+            """
+            import time
+            from tqdm import tqdm
 
-        # Get initial progress to know total
-        progress_info = self.check_progress(batch_id)
-        total = progress_info.get('total_tasks', 0)
+            logger.info(f"Waiting for batch {batch_id} to complete...")
 
-        # Create progress bar if requested
-        if show_progress and total > 0:
-            pbar = tqdm(total=total, desc="Processing documents", unit="doc")
-
-        last_completed = 0
-
-        # Poll loop
-        while True:
-            # Check current progress
+            # Get initial progress to know total
             progress_info = self.check_progress(batch_id)
-            completed = progress_info.get('completed', 0)
+            total = progress_info.get('total_tasks', 0)
 
-            # Update progress bar
+            # Create progress bar if requested
             if show_progress and total > 0:
-                pbar.update(completed - last_completed)
+                pbar = tqdm(total=total, desc="Processing documents", unit="doc")
 
-            last_completed = completed
+            last_completed = 0
 
-            # Check if done
-            if progress_info.get('status') == 'completed' or completed >= total:
+            # Poll loop
+            while True:
+                # Check current progress
+                progress_info = self.check_progress(batch_id)
+                completed = progress_info.get('completed', 0)
+
+                # Update progress bar
                 if show_progress and total > 0:
-                    pbar.close()
-                break
+                    pbar.update(completed - last_completed)
 
-            # Wait before checking again
-            time.sleep(poll_interval)
+                last_completed = completed
 
-        logger.success(
-            f"Batch complete: {progress_info.get('successful', 0)} successful, "
-            f"{progress_info.get('failed', 0)} failed"
-        )
+                # Check if done
+                if progress_info.get('status') == 'completed' or completed >= total:
+                    if show_progress and total > 0:
+                        pbar.close()
+                    break
 
-        return progress_info
+                # Wait before checking again
+                time.sleep(poll_interval)
 
+            logger.success(
+                f"Batch complete: {progress_info.get('successful', 0)} successful, "
+                f"{progress_info.get('failed', 0)} failed"
+            )
+
+            return progress_info
+
+# End of CELERY_AVAILABLE block
 
 else:
     # ===========================================================================

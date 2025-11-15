@@ -68,6 +68,45 @@ doc-classify reindex --category invoices --include-vectors
 
 ---
 
+## Metadata Extraction Commands
+
+```bash
+# Extract metadata from all documents
+python extract_metadata_batch.py
+
+# Extract from specific category only
+python extract_metadata_batch.py --category invoices
+
+# Limit number of documents
+python extract_metadata_batch.py --limit 10
+
+# Use different model
+python extract_metadata_batch.py --model llama3.1:8b
+
+# Dry run (preview without saving)
+python extract_metadata_batch.py --dry-run
+```
+
+---
+
+## Benchmarking Commands
+
+```bash
+# Quick benchmark test
+python benchmark_extraction.py
+
+# Establish baseline
+python benchmark_extraction.py --baseline --name my_baseline
+
+# Compare improvements
+python benchmark_extraction.py --compare --baseline-file benchmarks/benchmark_results_my_baseline_*.json
+
+# Test specific category
+python benchmark_extraction.py --category invoices
+```
+
+---
+
 ## Python API
 
 ```python

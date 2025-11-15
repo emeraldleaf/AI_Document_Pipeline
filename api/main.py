@@ -73,16 +73,20 @@ AUTHOR: AI Document Pipeline Team
 LAST UPDATED: October 2025
 """
 
-from fastapi import FastAPI, HTTPException, Query, Path as PathParam, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, Path as PathParam, BackgroundTasks, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict
 from datetime import datetime
 import asyncio
 from pathlib import Path
 import logging
 from contextlib import asynccontextmanager
+import uuid
+import json
+import tempfile
+import shutil
 
 # Optional dependencies for production
 try:
@@ -142,13 +146,17 @@ class SearchRequest(BaseModel):
 
 
 class DocumentMetadata(BaseModel):
-    """Document metadata in search results."""
+    """Document metadata in search results - accepts additional fields from structured metadata extraction."""
     file_name: str
     file_type: str
     file_size: int
     created_date: Optional[datetime]
     modified_date: Optional[datetime]
     page_count: Optional[int]
+
+    class Config:
+        # Allow extra fields from structured metadata (invoice numbers, amounts, etc.)
+        extra = "allow"
 
 
 class SearchResult(BaseModel):
@@ -251,6 +259,25 @@ class HealthResponse(BaseModel):
     timestamp: datetime
 
 
+class BatchUploadResponse(BaseModel):
+    """Response for batch upload submission."""
+    batch_id: str
+    total_files: int
+    message: str
+
+
+class BatchProgressResponse(BaseModel):
+    """Real-time progress for batch processing."""
+    batch_id: str
+    current: int
+    total: int
+    currentFile: str
+    percent: float
+    successCount: int
+    failureCount: int
+    results: List[Dict]
+
+
 # ==============================================================================
 # APPLICATION LIFESPAN (Startup/Shutdown)
 # ==============================================================================
@@ -264,6 +291,7 @@ async def lifespan(app: FastAPI):
     - Initialize database connection pool
     - Initialize search service
     - Load any caches
+    - Initialize batch progress tracking
 
     Shutdown:
     - Close database connections
@@ -277,6 +305,10 @@ async def lifespan(app: FastAPI):
         database_url=settings.database_url,
         embedding_provider=settings.embedding_provider
     )
+
+    # Initialize batch progress tracking (in-memory for now, could use Redis for production)
+    app.state.batch_progress = {}
+    app.state.batch_websockets = {}  # Track active WebSocket connections
 
     logger.info("FastAPI application started successfully")
 
@@ -550,9 +582,9 @@ async def search_documents(
 
         with app.state.search_service.engine.connect() as conn:
             for result in results:
-                # Get metadata from database
+                # Get metadata from database (including structured business metadata)
                 metadata_sql = """
-                    SELECT file_type, file_size, created_date, modified_date, page_count
+                    SELECT file_type, file_size, created_date, modified_date, page_count, metadata_json
                     FROM documents
                     WHERE id = :doc_id
                 """
@@ -560,14 +592,38 @@ async def search_documents(
 
                 # Create DocumentMetadata from the database row
                 if metadata_row:
-                    doc_metadata = DocumentMetadata(
-                        file_name=result.file_name,
-                        file_type=metadata_row[0] or "unknown",
-                        file_size=metadata_row[1] or 0,
-                        created_date=metadata_row[2],
-                        modified_date=metadata_row[3],
-                        page_count=metadata_row[4]
-                    )
+                    # Parse structured metadata if available
+                    structured_metadata = metadata_row[5]  # metadata_json column
+
+                    logger.debug(f"Document {result.id} metadata_json type: {type(structured_metadata)}")
+                    logger.debug(f"Document {result.id} metadata_json value: {structured_metadata}")
+
+                    # If metadata_json exists and has business data, merge it with file metadata
+                    if structured_metadata and isinstance(structured_metadata, dict):
+                        logger.info(f"Using structured metadata for document {result.id}")
+                        # Start with basic file metadata
+                        doc_metadata_dict = {
+                            "file_name": result.file_name,
+                            "file_type": metadata_row[0] or "unknown",
+                            "file_size": metadata_row[1] or 0,
+                            "created_date": metadata_row[2],
+                            "modified_date": metadata_row[3],
+                            "page_count": metadata_row[4],
+                        }
+                        # Merge with extracted business metadata
+                        doc_metadata_dict.update(structured_metadata)
+                        # Create DocumentMetadata instance with extra fields
+                        doc_metadata = DocumentMetadata(**doc_metadata_dict)
+                    else:
+                        logger.info(f"Using basic metadata for document {result.id}")
+                        doc_metadata = DocumentMetadata(
+                            file_name=result.file_name,
+                            file_type=metadata_row[0] or "unknown",
+                            file_size=metadata_row[1] or 0,
+                            created_date=metadata_row[2],
+                            modified_date=metadata_row[3],
+                            page_count=metadata_row[4]
+                        )
                 else:
                     # Fallback if no metadata found
                     doc_metadata = DocumentMetadata(
@@ -692,25 +748,51 @@ async def download_document(
         if not row:
             raise HTTPException(status_code=404, detail="Document not found")
 
-        # Get file path (sanitize to prevent directory traversal)
-        file_path = Path(row[0]).resolve()
+        # Get file path - handle both absolute and relative paths
+        file_path_str = row[0]
         file_name = row[1]
+
+        # Convert to Path object
+        file_path = Path(file_path_str)
+
+        # If relative path, resolve from project root
+        if not file_path.is_absolute():
+            # Get project root (parent of api directory)
+            project_root = Path(__file__).parent.parent
+            file_path = (project_root / file_path).resolve()
+        else:
+            file_path = file_path.resolve()
 
         # Verify file exists
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="File not found on disk")
+            logger.error(f"File not found: {file_path} (original path: {file_path_str})")
+            raise HTTPException(status_code=404, detail=f"File not found on disk: {file_path_str}")
 
         # Verify file is within allowed directory (security)
         # TODO: Configure allowed base paths in settings
         # if not str(file_path).startswith(str(settings.input_folder)):
         #     raise HTTPException(status_code=403, detail="Access denied")
 
+        # Determine media type based on file extension
+        import mimetypes
+        media_type, _ = mimetypes.guess_type(file_name)
+        if not media_type:
+            media_type = "application/octet-stream"
+
         # Return file with proper headers
-        return FileResponse(
+        # For PDFs and images, use inline disposition so browser displays them
+        # For other files, use attachment to force download
+        response = FileResponse(
             path=str(file_path),
             filename=file_name,
-            media_type="application/octet-stream"
+            media_type=media_type
         )
+
+        # Set Content-Disposition to inline for viewable files (PDFs, images)
+        if media_type in ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp']:
+            response.headers["Content-Disposition"] = f'inline; filename="{file_name}"'
+
+        return response
 
     except HTTPException:
         raise
@@ -773,6 +855,478 @@ async def preview_document(
         raise HTTPException(status_code=500, detail="Failed to preview document")
 
 
+@app.post("/api/batch-upload", response_model=BatchUploadResponse, tags=["Batch"])
+async def batch_upload(
+    files: List[UploadFile] = File(...),
+    background_tasks: BackgroundTasks = None
+):
+    """
+    Upload multiple documents for batch processing.
+
+    This endpoint:
+    1. Receives multiple files
+    2. Saves them temporarily
+    3. Submits them to Celery for processing
+    4. Returns batch_id for progress tracking via WebSocket
+
+    The actual processing happens asynchronously in the background using Celery.
+    Use the WebSocket endpoint /ws/batch-progress/{batch_id} to track progress.
+    """
+    try:
+        # Generate unique batch ID
+        batch_id = str(uuid.uuid4())
+
+        # Initialize batch progress
+        app.state.batch_progress[batch_id] = {
+            "current": 0,
+            "total": len(files),
+            "currentFile": "",
+            "percent": 0.0,
+            "successCount": 0,
+            "failureCount": 0,
+            "results": [],
+            "status": "pending"
+        }
+
+        # Save files temporarily
+        temp_dir = Path(tempfile.gettempdir()) / f"batch_{batch_id}"
+        temp_dir.mkdir(exist_ok=True)
+
+        saved_files = []
+        for file in files:
+            # Save file
+            file_path = temp_dir / file.filename
+            with open(file_path, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            saved_files.append({
+                "filename": file.filename,
+                "path": str(file_path)
+            })
+
+        # Submit batch to Celery for processing
+        background_tasks.add_task(
+            process_batch_background,
+            batch_id,
+            saved_files,
+            temp_dir
+        )
+
+        logger.info(f"Batch {batch_id} submitted with {len(files)} files")
+
+        return BatchUploadResponse(
+            batch_id=batch_id,
+            total_files=len(files),
+            message=f"Batch upload started. Use WebSocket /ws/batch-progress/{batch_id} to track progress."
+        )
+
+    except Exception as e:
+        logger.error(f"Batch upload failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Batch upload failed: {str(e)}")
+
+
+async def process_batch_background(batch_id: str, saved_files: List[Dict], temp_dir: Path):
+    """
+    Process batch of documents using Celery tasks.
+
+    This function submits each file to the existing Celery infrastructure
+    for distributed processing.
+    """
+    try:
+        # Import Celery tasks
+        from src.celery_tasks import classify_document_task
+
+        # Update status to processing
+        app.state.batch_progress[batch_id]["status"] = "processing"
+
+        # Submit each file to Celery
+        celery_tasks = []
+        for file_info in saved_files:
+            # Submit to Celery
+            task = classify_document_task.delay(
+                file_path_str=file_info["path"],
+                categories=settings.categories,
+                include_reasoning=False
+            )
+            celery_tasks.append({
+                "filename": file_info["filename"],
+                "task_id": task.id,
+                "task": task
+            })
+
+        # Monitor Celery tasks and update progress
+        for idx, task_info in enumerate(celery_tasks):
+            filename = task_info["filename"]
+            task = task_info["task"]
+
+            # Update current file being processed
+            app.state.batch_progress[batch_id]["currentFile"] = filename
+
+            # Wait for task to complete
+            try:
+                result = task.get(timeout=300)  # 5 minute timeout per file
+
+                # Update progress
+                if result.get("success"):
+                    app.state.batch_progress[batch_id]["successCount"] += 1
+                    app.state.batch_progress[batch_id]["results"].append({
+                        "filename": filename,
+                        "success": True,
+                        "category": result.get("category"),
+                        "confidence": result.get("confidence"),
+                        "task_id": task.id
+                    })
+                else:
+                    app.state.batch_progress[batch_id]["failureCount"] += 1
+                    app.state.batch_progress[batch_id]["results"].append({
+                        "filename": filename,
+                        "success": False,
+                        "error": result.get("error", "Unknown error"),
+                        "task_id": task.id
+                    })
+
+            except Exception as e:
+                logger.error(f"Task failed for {filename}: {e}")
+                app.state.batch_progress[batch_id]["failureCount"] += 1
+                app.state.batch_progress[batch_id]["results"].append({
+                    "filename": filename,
+                    "success": False,
+                    "error": str(e)
+                })
+
+            # Update overall progress
+            app.state.batch_progress[batch_id]["current"] = idx + 1
+            app.state.batch_progress[batch_id]["percent"] = ((idx + 1) / len(saved_files)) * 100
+
+            # Notify connected WebSockets
+            if batch_id in app.state.batch_websockets:
+                for ws in app.state.batch_websockets[batch_id]:
+                    try:
+                        await ws.send_json(app.state.batch_progress[batch_id])
+                    except Exception as e:
+                        logger.warning(f"Failed to send WebSocket update: {e}")
+
+        # Mark as complete
+        app.state.batch_progress[batch_id]["status"] = "complete"
+        app.state.batch_progress[batch_id]["currentFile"] = "Complete"
+
+        # Final WebSocket notification
+        if batch_id in app.state.batch_websockets:
+            for ws in app.state.batch_websockets[batch_id]:
+                try:
+                    await ws.send_json(app.state.batch_progress[batch_id])
+                except Exception as e:
+                    logger.warning(f"Failed to send final WebSocket update: {e}")
+
+        # Cleanup temp directory
+        try:
+            shutil.rmtree(temp_dir)
+            logger.info(f"Cleaned up temp directory for batch {batch_id}")
+        except Exception as e:
+            logger.warning(f"Failed to cleanup temp directory: {e}")
+
+    except Exception as e:
+        logger.error(f"Batch processing failed for {batch_id}: {e}", exc_info=True)
+        app.state.batch_progress[batch_id]["status"] = "error"
+        app.state.batch_progress[batch_id]["currentFile"] = f"Error: {str(e)}"
+
+
+@app.websocket("/ws/batch-progress/{batch_id}")
+async def batch_progress_websocket(websocket: WebSocket, batch_id: str):
+    """
+    WebSocket endpoint for real-time batch processing progress.
+
+    Clients connect with batch_id to receive real-time updates as documents
+    are processed. Updates include:
+    - Current file being processed
+    - Success/failure counts
+    - Overall progress percentage
+    - Individual document results
+
+    The connection remains open until all files are processed or client disconnects.
+    """
+    await websocket.accept()
+
+    # Register WebSocket connection
+    if batch_id not in app.state.batch_websockets:
+        app.state.batch_websockets[batch_id] = []
+    app.state.batch_websockets[batch_id].append(websocket)
+
+    try:
+        # Check if batch exists
+        if batch_id not in app.state.batch_progress:
+            await websocket.send_json({
+                "error": "Batch ID not found"
+            })
+            await websocket.close()
+            return
+
+        # Send initial state
+        await websocket.send_json(app.state.batch_progress[batch_id])
+
+        # Keep connection alive and send updates
+        while True:
+            # Check if batch is complete
+            if app.state.batch_progress[batch_id]["status"] in ["complete", "error"]:
+                # Send final state
+                await websocket.send_json(app.state.batch_progress[batch_id])
+                break
+
+            # Wait for updates (updates are pushed from process_batch_background)
+            await asyncio.sleep(0.5)
+
+    except WebSocketDisconnect:
+        logger.info(f"WebSocket disconnected for batch {batch_id}")
+    except Exception as e:
+        logger.error(f"WebSocket error for batch {batch_id}: {e}")
+    finally:
+        # Unregister WebSocket connection
+        if batch_id in app.state.batch_websockets:
+            app.state.batch_websockets[batch_id].remove(websocket)
+            if not app.state.batch_websockets[batch_id]:
+                del app.state.batch_websockets[batch_id]
+
+
+@app.get("/api/batch-progress/{batch_id}", tags=["Batch"])
+async def get_batch_progress(batch_id: str):
+    """
+    Get batch processing progress (HTTP polling alternative to WebSocket).
+
+    Use this if WebSocket is not available. Returns current state of batch processing.
+    """
+    if batch_id not in app.state.batch_progress:
+        raise HTTPException(status_code=404, detail="Batch ID not found")
+
+    return app.state.batch_progress[batch_id]
+
+
+# ==============================================================================
+# BATCH UPLOAD & PARALLEL PROCESSING (For 500K documents)
+# ==============================================================================
+
+from api.tasks import process_document_task, get_task_status, get_worker_stats
+
+@app.post("/api/upload", tags=["Upload"])
+async def upload_document(file: UploadFile = File(...)):
+    """
+    Upload a single document and process it asynchronously with Celery.
+
+    Returns immediately with task_id for monitoring.
+    Processing happens in background on distributed workers.
+
+    Supports: PDF, DOCX, TXT, images
+    """
+    try:
+        # Save file
+        file_id = str(uuid.uuid4())
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+
+        file_path = upload_dir / f"{file_id}_{file.filename}"
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        # Create database record
+        with app.state.search_service.engine.connect() as conn:
+            result = conn.execute(
+                text("""
+                    INSERT INTO documents (file_name, file_path, processing_status, created_at)
+                    VALUES (:file_name, :file_path, 'queued', NOW())
+                    RETURNING id
+                """),
+                {"file_name": file.filename, "file_path": str(file_path)}
+            )
+            conn.commit()
+            document_id = result.fetchone()[0]
+
+        # Queue task for processing (distributed to Celery workers)
+        task = process_document_task.delay(document_id, str(file_path))
+
+        return {
+            "document_id": document_id,
+            "task_id": task.id,
+            "status": "queued",
+            "message": "Document queued for processing. Check status with task_id."
+        }
+
+    except Exception as e:
+        logger.error(f"Upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+@app.post("/api/batch-upload", tags=["Upload"])
+async def batch_upload(files: List[UploadFile] = File(...)):
+    """
+    Upload multiple documents for parallel processing.
+
+    Optimized for bulk uploads (100-10,000 documents at a time).
+    Each document processed in parallel on distributed workers.
+
+    For 500K documents:
+    - Upload in batches of 1000
+    - 50 workers = process in ~28 hours
+    - Monitor progress with /api/batch-status/{batch_id}
+    """
+    try:
+        batch_id = str(uuid.uuid4())
+        upload_dir = Path("uploads")
+        upload_dir.mkdir(exist_ok=True)
+
+        document_ids = []
+        task_ids = []
+
+        # Save all files and create database records
+        with app.state.search_service.engine.connect() as conn:
+            for file in files:
+                file_id = str(uuid.uuid4())
+                file_path = upload_dir / f"{file_id}_{file.filename}"
+
+                # Save file
+                with open(file_path, "wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
+
+                # Create database record
+                result = conn.execute(
+                    text("""
+                        INSERT INTO documents (file_name, file_path, processing_status, batch_id, created_at)
+                        VALUES (:file_name, :file_path, 'queued', :batch_id, NOW())
+                        RETURNING id
+                    """),
+                    {
+                        "file_name": file.filename,
+                        "file_path": str(file_path),
+                        "batch_id": batch_id
+                    }
+                )
+                document_id = result.fetchone()[0]
+                document_ids.append(document_id)
+
+            conn.commit()
+
+        # Queue all tasks in parallel (Celery distributes across workers)
+        from celery import group
+        job = group([
+            process_document_task.s(doc_id, str(upload_dir / f"*{doc_id}*"))
+            for doc_id in document_ids
+        ])
+        result = job.apply_async()
+
+        return {
+            "batch_id": batch_id,
+            "document_count": len(files),
+            "document_ids": document_ids,
+            "group_id": result.id,
+            "status": "queued",
+            "message": f"{len(files)} documents queued for parallel processing"
+        }
+
+    except Exception as e:
+        logger.error(f"Batch upload failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Batch upload failed: {str(e)}")
+
+
+@app.get("/api/task-status/{task_id}", tags=["Monitoring"])
+async def get_task_status_endpoint(task_id: str):
+    """
+    Get status of a Celery task.
+
+    States:
+    - PENDING: Task waiting to be executed
+    - STARTED: Task has been started
+    - SUCCESS: Task completed successfully
+    - FAILURE: Task failed
+    - RETRY: Task is being retried
+    """
+    try:
+        status = get_task_status(task_id)
+        return status
+    except Exception as e:
+        logger.error(f"Failed to get task status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get task status")
+
+
+@app.get("/api/batch-status/{batch_id}", tags=["Monitoring"])
+async def get_batch_status(batch_id: str):
+    """
+    Get processing status of a batch.
+
+    Returns:
+    - Total documents in batch
+    - Completed count
+    - Processing count
+    - Failed count
+    - Progress percentage
+    - Individual document statuses
+    """
+    try:
+        with app.state.search_service.engine.connect() as conn:
+            # Get all documents in batch
+            result = conn.execute(
+                text("""
+                    SELECT id, file_name, processing_status, category, error_message
+                    FROM documents
+                    WHERE batch_id = :batch_id
+                    ORDER BY created_at
+                """),
+                {"batch_id": batch_id}
+            )
+            docs = result.fetchall()
+
+        if not docs:
+            raise HTTPException(status_code=404, detail="Batch not found")
+
+        # Calculate statistics
+        total = len(docs)
+        completed = sum(1 for d in docs if d[2] == 'completed')
+        processing = sum(1 for d in docs if d[2] == 'processing')
+        queued = sum(1 for d in docs if d[2] == 'queued')
+        failed = sum(1 for d in docs if d[2] == 'failed')
+
+        return {
+            "batch_id": batch_id,
+            "total": total,
+            "completed": completed,
+            "processing": processing,
+            "queued": queued,
+            "failed": failed,
+            "progress_percent": round((completed / total * 100), 2) if total > 0 else 0,
+            "estimated_time_remaining": f"{((total - completed) / max(1, completed)) * 10} seconds" if completed > 0 else "calculating...",
+            "documents": [
+                {
+                    "id": d[0],
+                    "filename": d[1],
+                    "status": d[2],
+                    "category": d[3],
+                    "error": d[4]
+                }
+                for d in docs[:100]  # Limit to first 100 for performance
+            ]
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get batch status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get batch status")
+
+
+@app.get("/api/workers", tags=["Monitoring"])
+async def get_workers():
+    """
+    Get information about active Celery workers.
+
+    Returns:
+    - Number of active workers
+    - Active tasks count
+    - Worker hostnames
+    """
+    try:
+        stats = get_worker_stats()
+        return stats
+    except Exception as e:
+        logger.error(f"Failed to get worker stats: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get worker stats")
+
+
 # ==============================================================================
 # ERROR HANDLERS
 # ==============================================================================
@@ -780,22 +1334,28 @@ async def preview_document(
 @app.exception_handler(404)
 async def not_found_handler(request, exc):
     """Custom 404 handler."""
-    return {
-        "error": "Not Found",
-        "detail": "The requested resource was not found",
-        "path": str(request.url)
-    }
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Not Found",
+            "detail": "The requested resource was not found",
+            "path": str(request.url)
+        }
+    )
 
 
 @app.exception_handler(500)
 async def internal_error_handler(request, exc):
     """Custom 500 handler."""
     logger.error(f"Internal server error: {exc}", exc_info=True)
-    return {
-        "error": "Internal Server Error",
-        "detail": "An unexpected error occurred",
-        "path": str(request.url)
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "detail": "An unexpected error occurred",
+            "path": str(request.url)
+        }
+    )
 
 
 # ==============================================================================

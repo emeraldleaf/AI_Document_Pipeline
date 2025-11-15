@@ -307,7 +307,7 @@ postgresql://joshuadell@localhost:5432/documents
 ./start_search_ui.sh
 
 # Or use the test script
-./test_full_stack.sh
+./scripts/test_full_stack.sh
 ```
 
 ### Explore the Code

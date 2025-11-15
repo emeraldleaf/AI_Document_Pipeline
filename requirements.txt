@@ -39,10 +39,15 @@ psycopg2-binary==2.9.9  # PostgreSQL driver
 # If using Ollama embeddings only, these are optional
 # openai==1.12.0  # Uncomment for OpenAI embeddings in production
 
-# High-performance processing (Optional - for distributed processing)
+# OpenSearch (for enterprise-scale search with 500K+ documents)
+opensearch-py==2.4.0  # OpenSearch Python client
+
+# High-performance processing (for 500K documents parallel processing)
 celery==5.3.4  # Distributed task queue
 redis==5.0.1  # Message broker for Celery
 flower==2.0.1  # Celery monitoring dashboard
+aiohttp==3.9.1  # Async HTTP client for batch uploads
+aiofiles==23.2.1  # Async file operations
 
 # System monitoring (for performance benchmarks)
 psutil>=5.9.0  # System resource monitoring

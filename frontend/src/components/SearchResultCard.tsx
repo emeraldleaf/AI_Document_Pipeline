@@ -23,10 +23,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Download, Eye, Calendar, HardDrive,
-  FileType, TrendingUp, FileText
+  FileType, TrendingUp, FileText, DollarSign, Hash, Building2, User
 } from 'lucide-react';
 import type { SearchResult, SearchMode } from '../types';
-import { formatBytes, formatDate, truncateText } from '../utils';
+import { formatBytes, formatDate, truncateText, highlightText } from '../utils';
 import { downloadDocument, getDocumentPreview } from '../api';
 import DocumentModal from './DocumentModal';
 
@@ -36,6 +36,9 @@ interface SearchResultCardProps {
 
   /** Current search mode (affects how score is displayed) */
   searchMode?: SearchMode;
+
+  /** The search query for highlighting */
+  query?: string;
 }
 
 /**
@@ -44,7 +47,7 @@ interface SearchResultCardProps {
  * Displays a single document from search results.
  * Clicking the card expands it to show more details.
  */
-export default function SearchResultCard({ result }: SearchResultCardProps) {
+export default function SearchResultCard({ result, searchMode, query }: SearchResultCardProps) {
   // ==========================================================================
   // STATE
   // ==========================================================================
@@ -126,15 +129,212 @@ export default function SearchResultCard({ result }: SearchResultCardProps) {
   const getCategoryColor = (category: string): string => {
     const colors: Record<string, string> = {
       invoice: 'bg-blue-100 text-blue-800',
+      invoices: 'bg-blue-100 text-blue-800',
       contract: 'bg-purple-100 text-purple-800',
+      contracts: 'bg-purple-100 text-purple-800',
       receipt: 'bg-green-100 text-green-800',
       report: 'bg-orange-100 text-orange-800',
+      reports: 'bg-orange-100 text-orange-800',
       research: 'bg-pink-100 text-pink-800',
       compliance: 'bg-indigo-100 text-indigo-800',
       correspondence: 'bg-cyan-100 text-cyan-800',
       other: 'bg-gray-100 text-gray-800',
     };
     return colors[category.toLowerCase()] || colors.other;
+  };
+
+  /**
+   * Check if result has extracted business metadata
+   */
+  const hasBusinessMetadata = (): boolean => {
+    const metadata = result.metadata as any;
+    return !!(
+      metadata.invoice_number ||
+      metadata.contract_number ||
+      metadata.report_type ||
+      metadata.total_amount ||
+      metadata.vendor_name ||
+      metadata.customer_name
+    );
+  };
+
+  /**
+   * Render structured metadata based on document category
+   */
+  const renderStructuredMetadata = () => {
+    if (!hasBusinessMetadata()) return null;
+
+    const metadata = result.metadata as any;
+    const category = result.category.toLowerCase();
+
+    // Invoice/Receipt metadata
+    if (category === 'invoices' || category === 'invoice' || category === 'receipts' || category === 'receipt') {
+      return (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Invoice Details
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {metadata.invoice_number && (
+              <div className="flex items-center gap-2">
+                <Hash className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Invoice:</span>
+                <span className="font-medium text-gray-900">{metadata.invoice_number}</span>
+              </div>
+            )}
+            {metadata.total_amount != null && (
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-green-600" />
+                <span className="text-gray-600">Total:</span>
+                <span className="font-semibold text-green-700">
+                  ${parseFloat(metadata.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
+            {metadata.vendor_name && (
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Vendor:</span>
+                <span className="font-medium text-gray-900 truncate">{metadata.vendor_name}</span>
+              </div>
+            )}
+            {metadata.invoice_date && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Date:</span>
+                <span className="font-medium text-gray-900">
+                  {new Date(metadata.invoice_date).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {metadata.due_date && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-red-400" />
+                <span className="text-gray-600">Due:</span>
+                <span className="font-medium text-gray-900">
+                  {new Date(metadata.due_date).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {metadata.customer_name && (
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Customer:</span>
+                <span className="font-medium text-gray-900 truncate">{metadata.customer_name}</span>
+              </div>
+            )}
+          </div>
+          {metadata.extraction_confidence != null && (
+            <div className="mt-2 text-xs text-gray-500">
+              Extracted with {(metadata.extraction_confidence * 100).toFixed(0)}% confidence
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Contract metadata
+    if (category === 'contracts' || category === 'contract') {
+      return (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Contract Details
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {metadata.contract_number && (
+              <div className="flex items-center gap-2">
+                <Hash className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Contract:</span>
+                <span className="font-medium text-gray-900">{metadata.contract_number}</span>
+              </div>
+            )}
+            {metadata.contract_value != null && (
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-green-600" />
+                <span className="text-gray-600">Value:</span>
+                <span className="font-semibold text-green-700">
+                  ${parseFloat(metadata.contract_value).toLocaleString()}
+                </span>
+              </div>
+            )}
+            {metadata.party_a && (
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Party A:</span>
+                <span className="font-medium text-gray-900 truncate">{metadata.party_a}</span>
+              </div>
+            )}
+            {metadata.party_b && (
+              <div className="flex items-center gap-2">
+                <User className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Party B:</span>
+                <span className="font-medium text-gray-900 truncate">{metadata.party_b}</span>
+              </div>
+            )}
+            {metadata.start_date && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Start:</span>
+                <span className="font-medium text-gray-900">
+                  {new Date(metadata.start_date).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {metadata.end_date && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-red-400" />
+                <span className="text-gray-600">End:</span>
+                <span className="font-medium text-gray-900">
+                  {new Date(metadata.end_date).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Report metadata
+    if (category === 'reports' || category === 'report') {
+      return (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Report Details
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {metadata.report_type && (
+              <div className="flex items-center gap-2">
+                <FileType className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Type:</span>
+                <span className="font-medium text-gray-900">{metadata.report_type}</span>
+              </div>
+            )}
+            {metadata.fiscal_year && (
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">FY:</span>
+                <span className="font-medium text-gray-900">{metadata.fiscal_year}</span>
+              </div>
+            )}
+            {metadata.fiscal_quarter && (
+              <div className="flex items-center gap-2">
+                <span className="text-gray-600">Quarter:</span>
+                <span className="font-medium text-gray-900">{metadata.fiscal_quarter}</span>
+              </div>
+            )}
+            {metadata.department && (
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">Dept:</span>
+                <span className="font-medium text-gray-900">{metadata.department}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   // ==========================================================================
@@ -182,11 +382,65 @@ export default function SearchResultCard({ result }: SearchResultCardProps) {
               )}
             </div>
 
-            {/* Content Preview - Now shows matching snippet with context */}
-            <div className="text-sm text-gray-700 bg-gray-50 border-l-4 border-blue-400 p-3 rounded">
-              <p className="whitespace-pre-wrap">
-                {truncateText(result.content_preview, isExpanded ? 1000 : 200)}
-              </p>
+            {/* Structured Business Metadata */}
+            {renderStructuredMetadata()}
+
+            {/* Content Preview - Shows matching snippet with context */}
+            <div className={`text-sm text-gray-700 bg-gray-50 border-l-4 p-3 rounded ${
+              searchMode === 'semantic' ? 'border-blue-400 bg-blue-50' : 'border-blue-400'
+            }`}>
+              {/* Debug: Show search mode */}
+              <div className="text-xs text-gray-500 mb-1">Mode: {searchMode || 'undefined'}</div>
+              {searchMode === 'semantic' ? (
+                // For semantic search, highlight the entire relevant section AND individual words
+                <div className="bg-blue-100 border border-blue-300 rounded p-2">
+                  <p
+                    className="whitespace-pre-wrap font-medium text-blue-900"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        truncateText(result.content_preview, isExpanded ? 1000 : 200),
+                        query || '',
+                        false,
+                        searchMode
+                      )
+                    }}
+                  />
+                  <div className="text-xs text-blue-600 mt-1 italic">
+                    Semantically relevant content
+                  </div>
+                </div>
+              ) : searchMode === 'hybrid' ? (
+                // For hybrid search, show semantic section highlighting AND keyword highlighting
+                <div className="bg-blue-100 border border-blue-300 rounded p-2">
+                  <p
+                    className="whitespace-pre-wrap font-medium text-blue-900"
+                    dangerouslySetInnerHTML={{
+                      __html: highlightText(
+                        truncateText(result.content_preview, isExpanded ? 1000 : 200),
+                        query || '',
+                        false,
+                        'keyword' // Use yellow highlighting for keywords in hybrid
+                      )
+                    }}
+                  />
+                  <div className="text-xs text-blue-600 mt-1 italic">
+                    Hybrid: Semantically relevant with keyword matches
+                  </div>
+                </div>
+              ) : (
+                // For keyword search, highlight individual words
+                <p
+                  className="whitespace-pre-wrap"
+                  dangerouslySetInnerHTML={{
+                    __html: highlightText(
+                      truncateText(result.content_preview, isExpanded ? 1000 : 200),
+                      query || '',
+                      false,
+                      searchMode
+                    )
+                  }}
+                />
+              )}
             </div>
           </div>
 
