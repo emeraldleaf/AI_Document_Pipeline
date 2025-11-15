@@ -19,9 +19,9 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | Document | Purpose | Audience |
 |----------|---------|----------|
 | **[README.md](README.md)** | Main project documentation | Everyone |
+| **[START_HERE.md](START_HERE.md)** | Getting started guide | New users |
 | **[ARCHITECTURE.md](ARCHITECTURE.md)** | System architecture & design | Developers |
 | **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** | Project overview & stats | Stakeholders |
-| **[GETTING_STARTED.md](GETTING_STARTED.md)** | Comprehensive getting started | New users |
 
 ---
 
@@ -64,7 +64,6 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 |----------|---------|----------|
 | **[TESTING_GUIDE.md](TESTING_GUIDE.md)** | Testing strategy & organization | Developers/QA |
 | **[END_TO_END_TESTING_GUIDE.md](END_TO_END_TESTING_GUIDE.md)** | Complete testing guide | QA Engineers |
-| **[TESTING_QUICK_REFERENCE.md](TESTING_QUICK_REFERENCE.md)** | Quick testing commands | Developers |
 | **[BENCHMARKING_GUIDE.md](BENCHMARKING_GUIDE.md)** | Performance benchmarking | DevOps |
 
 ---
@@ -76,9 +75,7 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | **[LLM_METADATA_EXTRACTION.md](LLM_METADATA_EXTRACTION.md)** | Metadata extraction with LLMs | Developers |
 | **[SCHEMA_MANAGEMENT_GUIDE.md](SCHEMA_MANAGEMENT_GUIDE.md)** | Managing document type schemas | Developers |
 | **[SPLITTING_GUIDE.md](SPLITTING_GUIDE.md)** | Document chunking | Advanced users |
-| **[OCR_IMPLEMENTATION.md](OCR_IMPLEMENTATION.md)** | OCR capabilities & setup | Developers |
 | **[TRAINING_GUIDE.md](TRAINING_GUIDE.md)** | Model training & fine-tuning | ML engineers |
-| **[TRAINING_QUICKSTART.md](TRAINING_QUICKSTART.md)** | Quick training setup | ML engineers |
 
 ---
 
@@ -89,17 +86,6 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | **[DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)** | Production deployment guide | DevOps |
 | **[PRODUCTION_RESILIENCE_GUIDE.md](PRODUCTION_RESILIENCE_GUIDE.md)** | Production best practices | DevOps/Engineers |
 | **[DATABASE_GUIDE.md](DATABASE_GUIDE.md)** | Database management | DB administrators |
-| **[CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)** | POC → Production deployment | DevOps/Engineers |
-
----
-
-## 🏛️ Architecture
-
-| Document | Purpose | Audience |
-|----------|---------|----------|
-| **[ARCHITECTURE.md](ARCHITECTURE.md)** | System architecture & design | Developers |
-| **[SOLID_ARCHITECTURE.md](SOLID_ARCHITECTURE.md)** | SOLID principles implementation | Developers |
-| **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** | Search implementation details | Technical leads |
 
 ---
 
