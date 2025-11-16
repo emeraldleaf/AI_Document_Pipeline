@@ -114,17 +114,47 @@ AI_Document_Pipeline/
 
 ### 3. Metadata Extraction
 
-**Extraction Capabilities:**
-- Document dates and timestamps
-- Monetary amounts and currencies
-- Named entities (people, organizations, locations)
-- Custom fields per document type
-- Confidence scoring
+**Extraction Methods:**
+- **Rule-based**: Fast regex extraction for structured formats
+- **LLM-based**: Flexible extraction using local Ollama models
+- **Hybrid**: Combines rules + LLM validation for best results
+
+**Invoices & Receipts:**
+- Invoice/receipt numbers, dates (invoice, due)
+- Vendor and customer details (name, address, phone, email)
+- Financial details (currency, subtotal, tax, total, amount paid/due)
+- Payment info (method, terms, status)
+- Line items with quantities and prices
+
+**Contracts & Agreements:**
+- Contract number, type (service, employment, NDA)
+- All parties (company, client, contractors)
+- All dates (execution, effective, start, end, expiration)
+- Financial terms (value, currency, payment schedule, duration)
+- Clauses (termination, confidentiality, renewal)
+- Status and signatory names
+
+**Reports & Analyses:**
+- Report type, number, dates
+- Fiscal periods (year, quarter)
+- Department, prepared by, reviewed by
+- Financial metrics (revenue, expenses, profit, growth)
+- Confidentiality level
+
+**Correspondence (Emails):**
+- Subject, sender/recipients, dates
+- Attachments, priority
+- Meeting details and action items
+
+**Compliance Documents:**
+- Regulation name, number, type (GDPR, HIPAA, SOX)
+- Effective and review dates
+- Approval status
 
 **LLM Integration:**
 - Local Ollama models (llama3.2, qwen2.5)
-- Structured JSON output
-- Schema validation
+- Structured JSON output with Pydantic schemas
+- Schema validation and confidence scoring (0.0-1.0)
 - Benchmarking and comparison tools
 
 ### 4. OCR Processing
