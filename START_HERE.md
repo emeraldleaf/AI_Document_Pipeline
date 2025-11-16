@@ -1,127 +1,155 @@
-# 🚀 AI Document Pipeline - Start Here
+# AI Document Pipeline - Start Here
 
-**Welcome!** This is your entry point to the event-driven microservices document processing pipeline.
+AI-powered document classification and processing pipeline with parallel processing capabilities.
 
 ---
 
-## ⚡ Quick Start (1 Command)
+## Quick Start
+
+### 1. Prerequisites
 
 ```bash
-./start_microservices.sh
-```
-
-That's it! The script will:
-- ✅ Start all 11 services
-- ✅ Pull AI models
-- ✅ Run health checks
-- ✅ Display all URLs and next steps
-
-**Time:** ~15 minutes (first time, ~2 minutes after)
-
----
-
-## 📖 What Do You Want To Do?
-
-### 🎯 **NEW: Event-Driven Microservices (Recommended)**
-→ **[README_MICROSERVICES.md](README_MICROSERVICES.md)** - Modern microservices architecture
-→ **[QUICKREF.md](QUICKREF.md)** - Quick reference guide
-- ✅ Event-driven with RabbitMQ
-- ✅ Horizontally scalable (10-120 docs/min)
-- ✅ Real-time WebSocket progress
-- ✅ 90% cost savings vs cloud
-- ✅ Production-ready
-
-### 📄 Classify Documents (Basic - Original)
-→ **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-
-### ⚡ Process 500K Documents (High-Volume - Original)
-→ **[QUICK_START_500K.md](QUICK_START_500K.md)** - Process massive volumes fast
-
-### 🔍 Search Documents (Original)
-→ **[SETUP_SEARCH.md](SETUP_SEARCH.md)** - Enable search in 10 minutes
-
-### 🚀 Deploy to Production
-→ **[DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** - Microservices deployment
-→ **[CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)** - Original cloud migration
-
----
-
-## Quick Test (PostgreSQL + Search)
-
-### Step 1: Install Docker Desktop (if not installed)
-
-```bash
+# Install Docker Desktop
 brew install --cask docker
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Then open **Docker Desktop** from Applications and wait for it to start.
-
-### Step 2: Run the Test
+### 2. Start Services
 
 ```bash
-./scripts/test_postgres.sh
+# Start PostgreSQL
+docker-compose up -d
+
+# Start Redis (for parallel processing)
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+
+# Pull embedding model
+ollama pull nomic-embed-text
 ```
 
-That's it! The script will:
-- ✅ Start PostgreSQL with pgvector
-- ✅ Create test documents
-- ✅ Test full-text search
-- ✅ Test semantic search
-- ✅ Test hybrid search
-
-## What This Tests
-
-This validates your **ARCHITECTURE.md** scalability section:
-
-### Current Implementation ✅
-- PostgreSQL database with FTS indexing
-- pgvector integration (768-dimensional embeddings)
-- Hybrid search (keyword + semantic ranking < 150ms)
-- Automatic FTS triggers and IVFFlat vector indexes
-
-### Search Performance ✅
-- Keyword search: < 50ms (PostgreSQL FTS with BM25 ranking)
-- Semantic search: < 100ms (pgvector cosine similarity)
-- Hybrid search: < 150ms (weighted combination)
-
-## After Testing
-
-### Try Search Commands
+### 3. Configure
 
 ```bash
-# Basic search
-doc-classify search "invoice"
-
-# Semantic search
-doc-classify search "payment document" --mode semantic
-
-# View statistics
-doc-classify search-stats
+cp .env.example .env
 ```
 
-### Stop PostgreSQL
+### 4. Start API
 
 ```bash
-docker-compose down
+uvicorn api.main:app --port 8000
 ```
+
+Visit: http://localhost:8000
+
+---
+
+## What Can You Do?
+
+### Process Documents
+- Single document upload via web UI
+- Batch upload for high-volume processing
+- Automatic classification and metadata extraction
+
+### Search Documents
+- Full-text search
+- Semantic search with embeddings
+- Hybrid search combining both approaches
+
+### Scale Processing
+- Process up to 500K documents
+- Parallel processing with Celery workers
+- Real-time monitoring and progress tracking
+
+---
 
 ## Documentation
 
-### Quick Start Guides
-- **[QUICKSTART.md](QUICKSTART.md)** - Basic classification
-- **[QUICK_START_500K.md](QUICK_START_500K.md)** - High-volume processing ⚡
-- **[SETUP_SEARCH.md](SETUP_SEARCH.md)** - Search setup
-- **[QUICK_TEST_GUIDE.md](QUICK_TEST_GUIDE.md)** - Testing
+### Essential Reading
+- [README.md](README.md) - Complete project documentation
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+- [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) - Project overview
 
-### Complete Guides
-- **[SCALING_GUIDE.md](SCALING_GUIDE.md)** - Scale to 500K documents ⚡
-- **[SEARCH_GUIDE.md](SEARCH_GUIDE.md)** - Search documentation
-- **[CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)** - Production deployment
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture
+### High-Volume Processing
+- [PARALLEL_PROCESSING_IMPLEMENTATION.md](PARALLEL_PROCESSING_IMPLEMENTATION.md) - Process 500K documents
+- [DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md) - Production deployment
+- [SCALING_GUIDE.md](SCALING_GUIDE.md) - Scaling strategies
+
+### Search & Indexing
+- [SEARCH_GUIDE.md](SEARCH_GUIDE.md) - Search documentation
+- [SETUP_SEARCH.md](SETUP_SEARCH.md) - Search setup
+- [OPENSEARCH_SETUP_GUIDE.md](OPENSEARCH_SETUP_GUIDE.md) - OpenSearch integration
+
+### Testing & Development
+- [TESTING_GUIDE.md](TESTING_GUIDE.md) - Testing strategy
+- [END_TO_END_TESTING_GUIDE.md](END_TO_END_TESTING_GUIDE.md) - E2E testing
+- [BENCHMARKING_GUIDE.md](BENCHMARKING_GUIDE.md) - Performance testing
 
 ### All Documentation
-- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - Complete documentation index
+- [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - Complete index
 
 ---
 
-**Questions?** Check [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for all guides.
+## Common Tasks
+
+### Classify Documents
+```bash
+# Via API
+curl -X POST http://localhost:8000/api/upload \
+  -F "file=@document.pdf"
+```
+
+### Batch Upload
+```bash
+python scripts/batch_upload_500k.py /path/to/documents
+```
+
+### Search Documents
+```bash
+# Full-text search
+doc-classify search "invoice"
+
+# Semantic search
+doc-classify search "payment terms" --mode semantic
+
+# Hybrid search
+doc-classify search "contract" --mode hybrid
+```
+
+### Monitor Workers
+```bash
+# Start workers
+celery -A api.tasks worker --loglevel=info
+
+# Monitor status
+curl http://localhost:8000/api/workers
+```
+
+---
+
+## Architecture
+
+**Monolith + Parallel Workers**
+- FastAPI application serving web UI and API
+- PostgreSQL for document storage
+- Redis for task queuing
+- Celery workers for parallel processing
+- Ollama for local embeddings
+
+**Processing Capacity**
+- Single worker: ~10 documents/minute
+- 50 workers: 432,000 documents/day
+- Scales horizontally with worker count
+
+---
+
+## Next Steps
+
+1. **Process your first document** - Upload via http://localhost:8000
+2. **Scale up** - Read [PARALLEL_PROCESSING_IMPLEMENTATION.md](PARALLEL_PROCESSING_IMPLEMENTATION.md)
+3. **Deploy to production** - Read [DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)
+
+---
+
+Questions? Check [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) for complete documentation.
