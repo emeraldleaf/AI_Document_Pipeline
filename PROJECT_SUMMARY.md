@@ -30,7 +30,7 @@ AI_Document_Pipeline/
 ├── pyproject.toml              # Project configuration
 ├── .env.example                # Environment configuration template
 ├── README.md                   # Comprehensive documentation
-├── QUICKSTART.md              # Quick start guide
+├── START_HERE.md               # Quick start guide
 └── LICENSE                    # MIT License
 ```
 
@@ -265,9 +265,9 @@ Potential improvements:
 
 ## Documentation
 
-- [README.md](README.md) - Comprehensive documentation (300+ lines)
-- [QUICKSTART.md](QUICKSTART.md) - Quick start guide
-- [examples/sample_usage.py](examples/sample_usage.py) - Python API examples
+- [README.md](README.md) - Comprehensive documentation
+- [START_HERE.md](START_HERE.md) - Quick start guide
+- [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - Complete documentation index
 - Inline code documentation and type hints
 
 ## License

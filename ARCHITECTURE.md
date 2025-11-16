@@ -790,14 +790,9 @@ CMD ["doc-classify", "classify", "documents/input"]
 
 ## See Also
 
-### Architecture Documentation
-- **[SOLID_ARCHITECTURE.md](SOLID_ARCHITECTURE.md)** - SOLID principles implementation and Protocol-based design
-- **[OCR_IMPLEMENTATION.md](OCR_IMPLEMENTATION.md)** - OCR capabilities and integration
-
 ### Search & Database
 - **[SEARCH_GUIDE.md](SEARCH_GUIDE.md)** - Complete search documentation
 - **[SETUP_SEARCH.md](SETUP_SEARCH.md)** - Search setup guide
-- **[CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)** - POC → Production migration
 - **[DATABASE_GUIDE.md](DATABASE_GUIDE.md)** - Database management
 
 ### Testing
@@ -806,5 +801,4 @@ CMD ["doc-classify", "classify", "documents/input"]
 
 ---
 
-**Architecture Version:** 2.0.0 (with Search)
-**Last Updated:** October 2025
+**Last Updated:** November 2025

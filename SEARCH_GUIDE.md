@@ -762,9 +762,9 @@ doc-classify db-export --output backup.json
 
 ## Next Steps
 
-- **Getting Started**: See [GETTING_STARTED.md](GETTING_STARTED.md)
+- **Getting Started**: See [START_HERE.md](START_HERE.md)
 - **Database Guide**: See [DATABASE_GUIDE.md](DATABASE_GUIDE.md)
-- **Cloud Migration**: See [CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)
+- **Deployment**: See [DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)
 - **API Reference**: See source code in [src/search_service.py](src/search_service.py)
 
 ---

@@ -384,7 +384,7 @@ from src.search_service import SearchService
 ### 3. Deploy to Cloud
 
 ```bash
-# See CLOUD_MIGRATION.md for complete guide
+# See DEPLOYMENT_GUIDE_PARALLEL.md for complete guide
 # Summary: Just change DATABASE_URL
 
 # Production .env:
@@ -514,7 +514,7 @@ docker-compose exec postgres psql -U docuser -d documents \
 ## Support
 
 - **Documentation:** [SEARCH_GUIDE.md](SEARCH_GUIDE.md)
-- **Cloud Migration:** [CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)
+- **Deployment:** [DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)
 - **Database Guide:** [DATABASE_GUIDE.md](DATABASE_GUIDE.md)
 - **Issues:** GitHub Issues
 

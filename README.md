@@ -15,7 +15,6 @@ Automatically classify and organize multi-format documents (PDF, Excel, Word, et
   - Supports scanned documents and image-based PDFs
   - Confidence scoring for extracted text
   - Automatic image preprocessing for better accuracy
-  - See [OCR_IMPLEMENTATION.md](OCR_IMPLEMENTATION.md) for details
 - **Smart Extraction**: Extracts both text content and metadata (author, title, dates, etc.)
 - **Page-level Analysis**: Handles multi-page documents intelligently
 - **Image-based PDF Support**: Automatically detects and processes scanned PDFs with OCR
@@ -460,8 +459,6 @@ The pipeline is built with **SOLID principles** for maintainability, testability
 - **Testability**: Easy mocking and unit testing
 - **Extensibility**: Add new document formats or services without modifying core code
 
-**See [SOLID_ARCHITECTURE.md](SOLID_ARCHITECTURE.md) for complete architectural details**
-
 ### Component Overview
 
 ```
@@ -610,11 +607,9 @@ Contributions are welcome! Areas for improvement:
 
 Before contributing, please review:
 
-- **[SOLID_ARCHITECTURE.md](SOLID_ARCHITECTURE.md)** - Protocol-based architecture and design patterns
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and component details
 - **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Testing strategy and organization
 - **[END_TO_END_TESTING_GUIDE.md](END_TO_END_TESTING_GUIDE.md)** - Complete testing guide
-- **[OCR_IMPLEMENTATION.md](OCR_IMPLEMENTATION.md)** - OCR integration details
 
 ## License
 

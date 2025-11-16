@@ -137,16 +137,13 @@ This testing strategy ensures both the reliability of individual components and 
 
 ### Testing Documentation
 - **[END_TO_END_TESTING_GUIDE.md](END_TO_END_TESTING_GUIDE.md)** - Complete testing guide with ground truth format
-- **[TESTING_QUICK_REFERENCE.md](TESTING_QUICK_REFERENCE.md)** - Quick testing commands and metrics
-
 ### Architecture Documentation
-- **[SOLID_ARCHITECTURE.md](SOLID_ARCHITECTURE.md)** - Protocol-based design enables easy testing
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and component overview
 
 ### Related Guides
 - **[README.md](README.md)** - Main project documentation
-- **[OCR_IMPLEMENTATION.md](OCR_IMPLEMENTATION.md)** - OCR testing integration
+- **[END_TO_END_TESTING_GUIDE.md](END_TO_END_TESTING_GUIDE.md)** - Complete testing guide
 
 ---
 
-**Last Updated:** October 2025
+**Last Updated:** November 2025

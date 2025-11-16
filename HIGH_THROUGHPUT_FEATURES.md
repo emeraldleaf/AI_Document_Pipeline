@@ -16,7 +16,7 @@ The AI Document Pipeline now supports **ultra-high-throughput processing** capab
 
 ---
 
-## New Features
+## Features
 
 ### 1. Parallel Processing (`parallel_processor.py`)
 
@@ -427,7 +427,7 @@ docker-compose restart worker1 worker2 worker3 worker4
 
 - **Documentation**: [SCALING_GUIDE.md](SCALING_GUIDE.md)
 - **Architecture**: [ARCHITECTURE.md](ARCHITECTURE.md)
-- **Cloud Migration**: [CLOUD_MIGRATION.md](CLOUD_MIGRATION.md)
+- **Deployment**: [DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)
 - **Issues**: GitHub Issues
 
 ---

@@ -440,7 +440,7 @@ aws elasticache create-cache-cluster \
   --num-cache-nodes 1
 
 # 4. Deploy workers via Docker/ECS
-# See CLOUD_MIGRATION.md for details
+# See DEPLOYMENT_GUIDE_PARALLEL.md for details
 ```
 
 ### Cost Estimate (7 days)
