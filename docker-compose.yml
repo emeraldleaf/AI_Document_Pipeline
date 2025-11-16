@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # PostgreSQL database with pgvector extension
   postgres:
     image: pgvector/pgvector:pg16
     container_name: doc_pipeline_postgres
@@ -18,7 +19,117 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - doc_pipeline
+
+  # Redis for Celery task queue
+  redis:
+    image: redis:7-alpine
+    container_name: doc_pipeline_redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - doc_pipeline
+
+  # FastAPI application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: doc_pipeline_api
+    environment:
+      - DATABASE_URL=postgresql://docuser:devpassword@postgres:5432/documents
+      - REDIS_URL=redis://redis:6379/0
+      - USE_DATABASE=true
+      - STORE_FULL_CONTENT=true
+      - EMBEDDING_PROVIDER=ollama
+      - EMBEDDING_MODEL=nomic-embed-text
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./documents:/app/documents
+      - ./logs:/app/logs
+      - ./config:/app/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - doc_pipeline
+    restart: unless-stopped
+
+  # Celery workers for parallel processing
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: doc_pipeline_worker
+    environment:
+      - DATABASE_URL=postgresql://docuser:devpassword@postgres:5432/documents
+      - REDIS_URL=redis://redis:6379/0
+      - USE_DATABASE=true
+      - STORE_FULL_CONTENT=true
+      - EMBEDDING_PROVIDER=ollama
+      - EMBEDDING_MODEL=nomic-embed-text
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    volumes:
+      - ./documents:/app/documents
+      - ./logs:/app/logs
+      - ./config:/app/config
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A api.tasks worker --loglevel=info --concurrency=4
+    networks:
+      - doc_pipeline
+    restart: unless-stopped
+    deploy:
+      replicas: 1  # Scale with: docker-compose up --scale worker=5
+
+  # React frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: doc_pipeline_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - doc_pipeline
+    restart: unless-stopped
 
 volumes:
   postgres_data:
     driver: local
+  redis_data:
+    driver: local
+
+networks:
+  doc_pipeline:
+    driver: bridge
