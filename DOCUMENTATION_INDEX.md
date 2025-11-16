@@ -42,9 +42,7 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 |----------|---------|----------|
 | **[SEARCH_GUIDE.md](SEARCH_GUIDE.md)** | Complete search documentation | Search users |
 | **[SETUP_SEARCH.md](SETUP_SEARCH.md)** | Enable advanced search | Users wanting search |
-| **[OPENSEARCH_INTEGRATION.md](OPENSEARCH_INTEGRATION.md)** | OpenSearch integration | Developers |
 | **[OPENSEARCH_SETUP_GUIDE.md](OPENSEARCH_SETUP_GUIDE.md)** | OpenSearch setup | DevOps |
-| **[OPENSEARCH_ONLY_ANALYSIS.md](OPENSEARCH_ONLY_ANALYSIS.md)** | OpenSearch analysis | Architects |
 
 ---
 
@@ -54,7 +52,6 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 |----------|---------|----------|
 | **[SCALING_GUIDE.md](SCALING_GUIDE.md)** | Complete scaling documentation | DevOps/Engineers |
 | **[HIGH_THROUGHPUT_FEATURES.md](HIGH_THROUGHPUT_FEATURES.md)** | Feature overview & usage | Developers |
-| **[IMPLEMENTATION_SUMMARY_SCALING.md](IMPLEMENTATION_SUMMARY_SCALING.md)** | Technical implementation details | Technical leads |
 
 ---
 
@@ -113,7 +110,6 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 
 ### "I want to improve classification accuracy"
 1. **[TRAINING_GUIDE.md](TRAINING_GUIDE.md)** - Training guide
-2. **[TRAINING_QUICKSTART.md](TRAINING_QUICKSTART.md)** - Quick start
 
 ---
 
@@ -124,13 +120,12 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | Quick Start | 3 | Fast onboarding |
 | Core | 4 | Essential reading |
 | Parallel Processing | 4 | 500K document processing |
-| Search | 5 | Search functionality |
-| High-Throughput | 3 | Scaling |
-| Testing | 4 | Quality assurance |
-| Features | 6 | Specific features |
-| Production | 4 | Deployment |
-| Architecture | 3 | Design patterns |
-| **Total** | **36** | **Complete coverage** |
+| Search | 3 | Search functionality |
+| High-Throughput | 2 | Scaling |
+| Testing | 3 | Quality assurance |
+| Features | 4 | Specific features |
+| Production | 3 | Deployment |
+| **Total** | **24** | **Complete coverage** |
 
 ---
 
@@ -203,7 +198,5 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 ---
 
 **Last Updated:** November 2025
-**Total Documentation:** 36 files
+**Total Documentation:** 24 files
 **Latest Feature:** Parallel processing for 500K documents with Celery workers
-
-**Clean, focused documentation for production use** 🎯
