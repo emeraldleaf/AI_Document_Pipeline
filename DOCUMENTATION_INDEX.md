@@ -9,8 +9,6 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | Document | Purpose | Time | Audience |
 |----------|---------|------|----------|
 | **[START_HERE.md](START_HERE.md)** | Main entry point | 5 min | Everyone |
-| **[QUICK_START_500K.md](QUICK_START_500K.md)** | Process 500K documents | 10 min | High-volume users |
-| **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** | Command cheat sheet | 2 min | Quick lookup |
 
 ---
 
@@ -89,14 +87,12 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 ## 📖 Use Cases
 
 ### "I want to process 500K documents"
-1. **[QUICK_START_500K.md](QUICK_START_500K.md)** - Start here
-2. **[PARALLEL_PROCESSING_IMPLEMENTATION.md](PARALLEL_PROCESSING_IMPLEMENTATION.md)** - Full guide
-3. **[DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)** - Deploy to production
+1. **[PARALLEL_PROCESSING_IMPLEMENTATION.md](PARALLEL_PROCESSING_IMPLEMENTATION.md)** - Complete guide
+2. **[DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)** - Deploy to production
 
 ### "I want to classify documents"
 1. **[START_HERE.md](START_HERE.md)** - Getting started
 2. **[README.md](README.md)** - Full documentation
-3. **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Commands
 
 ### "I want to search my documents"
 1. **[SETUP_SEARCH.md](SETUP_SEARCH.md)** - Enable search
@@ -117,7 +113,7 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 
 | Category | Documents | Purpose |
 |----------|-----------|---------|
-| Quick Start | 3 | Fast onboarding |
+| Quick Start | 1 | Fast onboarding |
 | Core | 4 | Essential reading |
 | Parallel Processing | 4 | 500K document processing |
 | Search | 3 | Search functionality |
@@ -125,7 +121,7 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 | Testing | 3 | Quality assurance |
 | Features | 4 | Specific features |
 | Production | 3 | Deployment |
-| **Total** | **24** | **Complete coverage** |
+| **Total** | **22** | **Complete coverage** |
 
 ---
 
@@ -133,7 +129,6 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 
 ### End Users
 - [START_HERE.md](START_HERE.md)
-- [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
 - [SETUP_SEARCH.md](SETUP_SEARCH.md)
 
 ### Developers
@@ -190,7 +185,7 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 
 ## 🆘 Getting Help
 
-1. **Quick questions:** [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
+1. **Quick questions:** [START_HERE.md](START_HERE.md)
 2. **Setup issues:** Relevant guide above
 3. **Architecture questions:** [ARCHITECTURE.md](ARCHITECTURE.md)
 4. **Deployment:** [DEPLOYMENT_GUIDE_PARALLEL.md](DEPLOYMENT_GUIDE_PARALLEL.md)
@@ -198,5 +193,4 @@ Complete guide to all documentation in the AI Document Classification Pipeline.
 ---
 
 **Last Updated:** November 2025
-**Total Documentation:** 24 files
-**Latest Feature:** Parallel processing for 500K documents with Celery workers
+**Total Documentation:** 22 files
